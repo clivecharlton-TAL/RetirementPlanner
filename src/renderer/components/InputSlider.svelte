@@ -16,9 +16,11 @@
     const cleaned = raw.replace(/[^0-9.\-]/g, '');
     const parsed = parseFloat(cleaned);
     if (isNaN(parsed)) return value;
-    const clamped = Math.min(max, Math.max(min, parsed));
-    if (format === 'percent') return clamped / 100;
-    return clamped;
+    if (format === 'percent') {
+      const clamped = Math.min(max * 100, Math.max(min * 100, parsed));
+      return clamped / 100;
+    }
+    return Math.min(max, Math.max(min, parsed));
   }
 
   let inputStr = displayValue(value);
@@ -61,6 +63,10 @@
       step={format === 'percent' ? step * 100 : step}
       value={sliderValue(value)}
       on:input={(e) => { value = fromSlider(parseFloat((e.target as HTMLInputElement).value)); }}
+      on:wheel|preventDefault={(e) => {
+        const panel = (e.currentTarget as HTMLElement).closest('.panel') as HTMLElement | null;
+        if (panel) panel.scrollTop += (e as WheelEvent).deltaY;
+      }}
     />
     <div class="field-wrap">
       {#if format === 'currency'}<span class="prefix">R</span>{/if}

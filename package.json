@@ -40,8 +40,11 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@types/dompurify": "^3.0.5",
     "apexcharts": "^5.15.0",
+    "dompurify": "^3.4.10",
     "electron-squirrel-startup": "^1.0.1",
+    "marked": "^18.0.5",
     "svelte": "^5.56.3"
   }
 }

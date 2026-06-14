@@ -1,5 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from 'svelte';
+  import { marked } from 'marked';
+  import DOMPurify from 'dompurify';
+
+  function renderMarkdown(text: string): string {
+    const raw = marked.parse(text, { async: false }) as string;
+    return DOMPurify.sanitize(raw);
+  }
 
   export let open = false;
   export let contextJson = '';
@@ -112,15 +119,17 @@
 
       {#each messages as msg}
         <div class="message {msg.role}">
-          <div class="bubble">{msg.content}</div>
+          {#if msg.role === 'assistant'}
+            <div class="bubble md">{@html renderMarkdown(msg.content)}</div>
+          {:else}
+            <div class="bubble">{msg.content}</div>
+          {/if}
         </div>
       {/each}
 
       {#if streaming}
         <div class="message assistant">
-          <div class="bubble">
-            {streamingText}<span class="cursor">▊</span>
-          </div>
+          <div class="bubble md">{@html renderMarkdown(streamingText)}<span class="cursor">▊</span></div>
         </div>
       {/if}
     </div>
@@ -337,6 +346,99 @@
     color: var(--ink);
     border: 1px solid var(--border);
     border-bottom-left-radius: 2px;
+  }
+
+  /* Markdown rendered content */
+  .bubble.md {
+    white-space: normal;
+  }
+
+  .bubble.md :global(p) {
+    margin: 0 0 0.6em;
+  }
+  .bubble.md :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .bubble.md :global(h1),
+  .bubble.md :global(h2),
+  .bubble.md :global(h3),
+  .bubble.md :global(h4) {
+    font-family: var(--sans);
+    font-weight: 700;
+    margin: 0.8em 0 0.3em;
+    line-height: 1.3;
+  }
+  .bubble.md :global(h1) { font-size: 0.92rem; }
+  .bubble.md :global(h2) { font-size: 0.85rem; }
+  .bubble.md :global(h3) { font-size: 0.8rem; }
+  .bubble.md :global(h4) { font-size: 0.78rem; color: var(--gray); }
+
+  .bubble.md :global(strong) { font-weight: 700; color: var(--ink); }
+  .bubble.md :global(em) { font-style: italic; }
+
+  .bubble.md :global(hr) {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.75em 0;
+  }
+
+  .bubble.md :global(ul),
+  .bubble.md :global(ol) {
+    margin: 0.3em 0 0.6em 1.2em;
+    padding: 0;
+  }
+  .bubble.md :global(li) {
+    margin-bottom: 0.2em;
+  }
+
+  .bubble.md :global(code) {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    background: rgba(0,0,0,0.06);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+  }
+  .bubble.md :global(pre) {
+    background: rgba(0,0,0,0.06);
+    border-radius: 4px;
+    padding: 0.6em 0.75em;
+    overflow-x: auto;
+    margin: 0.4em 0;
+  }
+  .bubble.md :global(pre code) {
+    background: none;
+    padding: 0;
+    font-size: 0.7rem;
+  }
+
+  /* Tables */
+  .bubble.md :global(table) {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.72rem;
+    margin: 0.5em 0;
+  }
+  .bubble.md :global(th) {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.05);
+    padding: 0.3em 0.5em;
+    border: 1px solid var(--border);
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .bubble.md :global(td) {
+    padding: 0.3em 0.5em;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .bubble.md :global(tr:nth-child(even) td) {
+    background: rgba(0,0,0,0.02);
   }
 
   .cursor {
