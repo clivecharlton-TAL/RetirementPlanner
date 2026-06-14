@@ -1,0 +1,55 @@
+:root {
+  --ink:          #1a1a2e;
+  --paper:        #f8f6f1;
+  --surface:      #ffffff;
+  --accent:       #c45d2e;
+  --accent-light: #f0ddd2;
+  --blue:         #1b4965;
+  --blue-light:   #d6e8f0;
+  --green:        #2d6a4f;
+  --green-light:  #d4edda;
+  --red:          #9b2226;
+  --red-light:    #f5d0d0;
+  --amber:        #b5830a;
+  --amber-light:  #fff3cd;
+  --gray:         #6b7280;
+  --border:       #d1cdc4;
+
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans:  'IBM Plex Sans', -apple-system, sans-serif;
+  --mono:  'IBM Plex Mono', monospace;
+
+  --panel-width: 360px;
+  --radius: 2px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray); }
+
+/* Typography */
+h1 { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+h2 { font-family: var(--sans); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); }
+
+/* Utility */
+.mono { font-family: var(--mono); }
+.accent { color: var(--accent); }
