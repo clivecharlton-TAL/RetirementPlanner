@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Inputs } from './lib/types';
+  import type { Inputs, ExpenseItem } from './lib/types';
   import { calculate } from './lib/calculator';
   import InputPanel from './components/InputPanel.svelte';
   import Chart from './components/Chart.svelte';
   import StatusBanner from './components/StatusBanner.svelte';
   import ProjectionTable from './components/ProjectionTable.svelte';
+  import ExpenseSheet from './components/ExpenseSheet.svelte';
 
   const DEFAULT_INPUTS: Inputs = {
     currentAge: 55,
@@ -42,20 +43,25 @@
     uncertainty: { ...DEFAULT_INPUTS.uncertainty },
     bonusTranches: [...DEFAULT_INPUTS.bonusTranches],
   };
+  let expenses: ExpenseItem[] = [];
   let scenarioName = 'My Plan';
-  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let savedSnapshot = '';
+  let dirty = false;
+  let justSaved = false;
+  let tab: 'plan' | 'expenses' = 'plan';
 
   $: result = calculate(inputs);
+  $: totalExpensesBefore = expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
+  $: totalExpensesAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
+  $: dirty = savedSnapshot !== '' && JSON.stringify({ name: scenarioName, inputs, expenses }) !== savedSnapshot;
 
-  function scheduleAutoSave() {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      window.api?.saveScenario(scenarioName, JSON.stringify(inputs));
-    }, 50);
+  function save() {
+    window.api?.saveScenario(scenarioName, JSON.stringify(inputs), JSON.stringify(expenses));
+    savedSnapshot = JSON.stringify({ name: scenarioName, inputs, expenses });
+    dirty = false;
+    justSaved = true;
+    setTimeout(() => { justSaved = false; }, 1500);
   }
-
-  $: { inputs; scheduleAutoSave(); }
-  $: { scenarioName; scheduleAutoSave(); }
 
   onMount(async () => {
     try {
@@ -63,17 +69,18 @@
       if (row) {
         scenarioName = row.name;
         const loaded = JSON.parse(row.inputs_json);
-        // Deep-merge with defaults so newly added fields or missing sub-objects never produce NaN
         inputs = {
           ...DEFAULT_INPUTS,
           ...loaded,
           uncertainty: { ...DEFAULT_INPUTS.uncertainty, ...(loaded.uncertainty ?? {}) },
           bonusTranches: Array.isArray(loaded.bonusTranches) ? loaded.bonusTranches : [],
         };
+        expenses = Array.isArray(JSON.parse(row.expenses_json)) ? JSON.parse(row.expenses_json) : [];
       }
     } catch {
       // Running in browser dev mode without Electron — use defaults
     }
+    savedSnapshot = JSON.stringify({ name: scenarioName, inputs, expenses });
   });
 
   function onNameBlur(e: FocusEvent) {
@@ -103,19 +110,52 @@
       tabindex="0"
       aria-label="Scenario name"
     ></span>
+    <div class="header-right">
+      {#if dirty}
+        <span class="unsaved-dot" title="Unsaved changes"></span>
+      {/if}
+      <button
+        class="save-btn"
+        class:dirty
+        class:saved={justSaved}
+        on:click={save}
+        disabled={!dirty}
+      >
+        {justSaved ? '✓ Saved' : 'Save'}
+      </button>
+    </div>
   </header>
 
   <div class="body">
     <InputPanel bind:inputs />
 
     <main class="right">
-      <div class="right-top">
-        <StatusBanner {result} />
-        <Chart {result} retirementAge={inputs.retirementAge} />
-      </div>
-      <div class="right-table">
-        <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} />
-      </div>
+      <nav class="tabs">
+        <button class="tab" class:active={tab === 'plan'}    on:click={() => tab = 'plan'}>Plan</button>
+        <button class="tab" class:active={tab === 'expenses'} on:click={() => tab = 'expenses'}>Expenses</button>
+      </nav>
+
+      {#if tab === 'plan'}
+        <div class="right-top">
+          <StatusBanner {result} />
+          {#if expenses.length > 0}
+            <div class="expense-strip">
+              <span class="strip-label">Monthly expenses</span>
+              <span class="strip-item">Before retirement: <strong>R {Math.round(totalExpensesBefore).toLocaleString('en-ZA')}</strong></span>
+              <span class="strip-sep">·</span>
+              <span class="strip-item">After retirement: <strong>R {Math.round(totalExpensesAfter).toLocaleString('en-ZA')}</strong></span>
+            </div>
+          {/if}
+          <Chart {result} retirementAge={inputs.retirementAge} />
+        </div>
+        <div class="right-table">
+          <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} />
+        </div>
+      {:else}
+        <div class="right-table">
+          <ExpenseSheet bind:expenses />
+        </div>
+      {/if}
     </main>
   </div>
 </div>
@@ -167,6 +207,52 @@
     color: var(--accent);
   }
 
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    -webkit-app-region: no-drag;
+  }
+
+  .unsaved-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+  }
+
+  .save-btn {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--paper);
+    color: var(--gray);
+    cursor: default;
+    transition: all 0.15s;
+  }
+
+  .save-btn.dirty {
+    border-color: var(--accent);
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .save-btn.dirty:hover {
+    background: var(--accent);
+    color: white;
+  }
+
+  .save-btn.saved {
+    border-color: var(--green);
+    color: var(--green);
+    cursor: default;
+  }
+
   .body {
     display: flex;
     flex: 1;
@@ -181,6 +267,63 @@
     overflow: hidden;
     background: var(--paper);
   }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    padding: 0 0.75rem;
+  }
+
+  .tab {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    color: var(--gray);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab:hover:not(.active) { color: var(--ink); }
+
+  .expense-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--gray);
+    flex-shrink: 0;
+  }
+
+  .strip-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-right: 0.25rem;
+  }
+
+  .strip-item strong {
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .strip-sep { color: var(--border); }
 
   .right-top {
     flex-shrink: 0;

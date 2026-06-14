@@ -1,3 +1,10 @@
+export interface ExpenseItem {
+  id: string;
+  description: string;
+  beforeRetirement: number;
+  afterRetirement: number;
+}
+
 export interface BonusTranche {
   amount: number;
   yearsFromNow: number; // vests at currentAge + yearsFromNow
@@ -65,13 +72,14 @@ export interface ScenarioRow {
   id: number;
   name: string;
   inputs_json: string;
+  expenses_json: string;
 }
 
 declare global {
   interface Window {
     api: {
       loadScenario: () => Promise<ScenarioRow>;
-      saveScenario: (name: string, inputsJson: string) => Promise<void>;
+      saveScenario: (name: string, inputsJson: string, expensesJson: string) => Promise<void>;
     };
   }
 }

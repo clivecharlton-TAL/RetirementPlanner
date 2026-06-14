@@ -30,8 +30,8 @@ const createWindow = () => {
 };
 
 ipcMain.handle('load-scenario', () => loadScenario());
-ipcMain.handle('save-scenario', (_event, name: string, inputsJson: string) =>
-  saveScenario(name, inputsJson)
+ipcMain.handle('save-scenario', (_event, name: string, inputsJson: string, expensesJson: string) =>
+  saveScenario(name, inputsJson, expensesJson)
 );
 
 app.on('ready', createWindow);

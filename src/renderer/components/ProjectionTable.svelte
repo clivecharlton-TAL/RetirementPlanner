@@ -4,6 +4,7 @@
 
   export let rows: ProjectionRow[];
   export let retirementAge: number;
+  export let monthlyExpenses: number = 0;
 
   function drawdownClass(row: ProjectionRow): string {
     if (row.drawdownRate === null) return '';
@@ -27,6 +28,13 @@
     const annual = Math.abs(row.savingsOrDrawdown) + row.netRentalIncome + row.pensionIncome;
     return formatZAR(annual / 12);
   }
+
+  function netMonthly(row: ProjectionRow): { value: number; label: string } | null {
+    if (row.drawdownRate === null) return null;
+    const income = (Math.abs(row.savingsOrDrawdown) + row.netRentalIncome + row.pensionIncome) / 12;
+    const net = income - monthlyExpenses;
+    return { value: net, label: net >= 0 ? formatZAR(net) : `(${formatZAR(Math.abs(net))})` };
+  }
 </script>
 
 <div class="table-wrap">
@@ -40,6 +48,7 @@
         <th class="num">Net Rental</th>
         <th class="num">Pension (p.m.)</th>
         <th class="num highlight">Monthly Income</th>
+        <th class="num">Net vs Expenses</th>
         <th class="num">End Balance</th>
         <th class="num">Drawdown Rate</th>
       </tr>
@@ -54,6 +63,12 @@
           <td class="num mono">{formatZAR(row.netRentalIncome)}</td>
           <td class="num mono">{row.pensionIncome > 0 ? formatZAR(row.pensionIncome / 12) : '—'}</td>
           <td class="num mono highlight">{monthlyIncome(row)}</td>
+          {#if netMonthly(row) !== null}
+            {@const net = netMonthly(row)!}
+            <td class="num mono" class:surplus={net.value >= 0} class:deficit={net.value < 0}>{net.label}</td>
+          {:else}
+            <td class="num mono">—</td>
+          {/if}
           <td class="num mono">{formatZAR(row.endBalance)}</td>
           <td class="num mono {drawdownClass(row)}">
             {fmtDrawdown(row)}{#if row.drawdownCapped} <span class="cap-icon" title="FSCA limit applied">⚠</span>{/if}
@@ -119,6 +134,8 @@
 
   th.highlight { color: var(--blue); }
   td.highlight { color: var(--blue); font-weight: 600; }
+  td.surplus { color: var(--green); font-weight: 600; }
+  td.deficit { color: var(--red); font-weight: 600; }
 
   .rate-ok { color: var(--green); }
   .rate-warn { color: var(--amber); font-weight: 600; }

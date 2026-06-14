@@ -1,0 +1,237 @@
+<script lang="ts">
+  import type { ExpenseItem } from '../lib/types';
+
+  export let expenses: ExpenseItem[];
+
+  $: totalBefore = expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
+  $: totalAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
+
+  function fmtR(v: number): string {
+    if (v === 0) return '—';
+    const abs = Math.abs(Math.round(v)).toLocaleString('en-ZA');
+    return v < 0 ? `(R ${abs})` : `R ${abs}`;
+  }
+
+  function addRow() {
+    const id = `e${Date.now()}`;
+    expenses = [...expenses, { id, description: '', beforeRetirement: 0, afterRetirement: 0 }];
+  }
+
+  function removeRow(id: string) {
+    expenses = expenses.filter(e => e.id !== id);
+  }
+
+  function parseAmount(raw: string): number {
+    const cleaned = raw.replace(/[^0-9.\-]/g, '');
+    const v = parseFloat(cleaned);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function updateField(id: string, field: 'description' | 'beforeRetirement' | 'afterRetirement', value: string) {
+    expenses = expenses.map(e => {
+      if (e.id !== id) return e;
+      if (field === 'description') return { ...e, description: value };
+      return { ...e, [field]: parseAmount(value) };
+    });
+  }
+</script>
+
+<div class="sheet-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-desc">Expense</th>
+        <th class="col-amount">Before Retirement (p.m.)</th>
+        <th class="col-amount">After Retirement (p.m.)</th>
+        <th class="col-action"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {#each expenses as expense (expense.id)}
+        <tr class:negative={expense.beforeRetirement < 0 || expense.afterRetirement < 0}>
+          <td>
+            <input
+              class="cell-input desc"
+              type="text"
+              value={expense.description}
+              placeholder="Description"
+              on:change={(e) => updateField(expense.id, 'description', (e.target as HTMLInputElement).value)}
+            />
+          </td>
+          <td>
+            <input
+              class="cell-input amount"
+              class:is-negative={expense.beforeRetirement < 0}
+              type="text"
+              inputmode="numeric"
+              value={expense.beforeRetirement !== 0 ? Math.abs(expense.beforeRetirement).toLocaleString('en-ZA') : ''}
+              placeholder="0"
+              on:change={(e) => updateField(expense.id, 'beforeRetirement', (e.target as HTMLInputElement).value)}
+            />
+          </td>
+          <td>
+            <input
+              class="cell-input amount"
+              class:is-negative={expense.afterRetirement < 0}
+              type="text"
+              inputmode="numeric"
+              value={expense.afterRetirement !== 0 ? Math.abs(expense.afterRetirement).toLocaleString('en-ZA') : ''}
+              placeholder="0"
+              on:change={(e) => updateField(expense.id, 'afterRetirement', (e.target as HTMLInputElement).value)}
+            />
+          </td>
+          <td class="col-action">
+            <button class="remove" on:click={() => removeRow(expense.id)} title="Remove">×</button>
+          </td>
+        </tr>
+      {/each}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="total-label">Monthly Total</td>
+        <td class="total-amount" class:over={totalBefore > 0}>{fmtR(totalBefore)}</td>
+        <td class="total-amount" class:over={totalAfter > 0}>{fmtR(totalAfter)}</td>
+        <td></td>
+      </tr>
+      <tr class="annual-row">
+        <td class="total-label">Annual Total</td>
+        <td class="total-amount">{fmtR(totalBefore * 12)}</td>
+        <td class="total-amount">{fmtR(totalAfter * 12)}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <button class="add-row" on:click={addRow}>+ Add expense</button>
+</div>
+
+<style>
+  .sheet-wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  th {
+    padding: 0.45rem 0.75rem;
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gray);
+    background: var(--paper);
+    border-bottom: 2px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th.col-amount { text-align: right; width: 180px; }
+  th.col-action { width: 32px; }
+
+  tbody tr:hover { background: var(--accent-light); }
+  tbody tr.negative td { color: var(--green); }
+
+  td {
+    padding: 0.2rem 0.4rem;
+    border-bottom: 1px solid var(--paper);
+  }
+
+  .cell-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 0.2rem 0.4rem;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--ink);
+    outline: none;
+  }
+
+  .cell-input.desc { font-family: var(--sans); }
+  .cell-input.amount { font-family: var(--mono); text-align: right; }
+  .cell-input.amount.is-negative { color: var(--green); }
+
+  .cell-input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .remove {
+    background: none;
+    border: none;
+    color: var(--gray);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+    line-height: 1;
+  }
+
+  .remove:hover { color: var(--red); background: var(--red-light); }
+
+  tfoot tr { border-top: 2px solid var(--border); }
+
+  .total-row td { padding: 0.4rem 0.75rem; background: var(--paper); }
+  .annual-row td { padding: 0.3rem 0.75rem; background: var(--paper); }
+
+  .total-label {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gray);
+  }
+
+  .total-amount {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  .total-amount.over { color: var(--accent); }
+
+  .annual-row .total-amount {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--gray);
+  }
+
+  .add-row {
+    align-self: flex-start;
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+  }
+
+  .add-row:hover { background: var(--accent-light); }
+</style>
