@@ -44,6 +44,7 @@ const DEFAULT_INPUTS: Inputs = {
     pensionGrowth: 0.01,
   },
   mortgageBalance: 0,
+  vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
 };
 

@@ -58,6 +58,7 @@ export interface Inputs {
   };
   // Mortgage
   mortgageBalance: number;
+  vehicleFinanceBalance: number;
   mortgageInterestRate: number;
 }
 

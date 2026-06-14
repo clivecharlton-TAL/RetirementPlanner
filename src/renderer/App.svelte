@@ -50,6 +50,7 @@
       pensionGrowth: 0.01,
     },
     mortgageBalance: 0,
+    vehicleFinanceBalance: 0,
     mortgageInterestRate: 0.115,
   };
 
@@ -177,6 +178,7 @@
             retirementAge={inputs.retirementAge}
             currentAge={inputs.currentAge}
             bind:mortgageBalance={inputs.mortgageBalance}
+            bind:vehicleFinanceBalance={inputs.vehicleFinanceBalance}
             bind:mortgageInterestRate={inputs.mortgageInterestRate}
           />
         </div>

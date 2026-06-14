@@ -2,6 +2,7 @@
   export let retirementAge: number;
   export let currentAge: number;
   export let mortgageBalance: number;
+  export let vehicleFinanceBalance: number;
   export let mortgageInterestRate: number;
 
   interface AmortRow {
@@ -13,10 +14,11 @@
     balance: number;
   }
 
+  $: totalBalance = mortgageBalance + vehicleFinanceBalance;
   $: months = Math.max(0, Math.round((retirementAge - currentAge) * 12));
   $: monthlyRate = mortgageInterestRate / 12;
-  $: monthlyPayment = computePayment(mortgageBalance, monthlyRate, months);
-  $: rows = buildAmortisation(mortgageBalance, monthlyRate, monthlyPayment, months, currentAge);
+  $: monthlyPayment = computePayment(totalBalance, monthlyRate, months);
+  $: rows = buildAmortisation(totalBalance, monthlyRate, monthlyPayment, months, currentAge);
   $: totalInterest = rows.reduce((s, r) => s + r.interest, 0);
 
   function computePayment(balance: number, mRate: number, n: number): number {
@@ -66,6 +68,11 @@
     if (!isNaN(v) && v >= 0) mortgageBalance = v;
   }
 
+  function onVehicleChange(e: Event) {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    if (!isNaN(v) && v >= 0) vehicleFinanceBalance = v;
+  }
+
   function onRateChange(e: Event) {
     const v = parseFloat((e.target as HTMLInputElement).value);
     if (!isNaN(v) && v >= 0 && v <= 50) mortgageInterestRate = v / 100;
@@ -75,7 +82,7 @@
 <div class="sheet-wrap">
   <div class="vars">
     <div class="var-group">
-      <label class="var-label">Outstanding Balance</label>
+      <label class="var-label">Mortgage Balance</label>
       <div class="var-field">
         <span class="var-affix">R</span>
         <input
@@ -85,6 +92,21 @@
           step="10000"
           value={mortgageBalance}
           on:change={onBalanceChange}
+        />
+      </div>
+    </div>
+
+    <div class="var-group">
+      <label class="var-label">Vehicle Finance</label>
+      <div class="var-field">
+        <span class="var-affix">R</span>
+        <input
+          class="var-input balance"
+          type="number"
+          min="0"
+          step="5000"
+          value={vehicleFinanceBalance}
+          on:change={onVehicleChange}
         />
       </div>
     </div>
@@ -124,6 +146,23 @@
         <span class="summary-payment">{fmtR(monthlyPayment)}</span>
       </div>
       <div class="summary-stats">
+        {#if vehicleFinanceBalance > 0}
+          <span class="stat">
+            <span class="stat-label">Mortgage</span>
+            <span class="stat-value">{fmtR(mortgageBalance)}</span>
+          </span>
+          <span class="stat-sep">+</span>
+          <span class="stat">
+            <span class="stat-label">Vehicle</span>
+            <span class="stat-value">{fmtR(vehicleFinanceBalance)}</span>
+          </span>
+          <span class="stat-sep">=</span>
+          <span class="stat">
+            <span class="stat-label">Total</span>
+            <span class="stat-value">{fmtR(totalBalance)}</span>
+          </span>
+          <span class="stat-sep">·</span>
+        {/if}
         <span class="stat">
           <span class="stat-label">Total interest</span>
           <span class="stat-value red">{fmtR(totalInterest)}</span>
@@ -131,17 +170,17 @@
         <span class="stat-sep">·</span>
         <span class="stat">
           <span class="stat-label">Total paid</span>
-          <span class="stat-value">{fmtR(mortgageBalance + totalInterest)}</span>
+          <span class="stat-value">{fmtR(totalBalance + totalInterest)}</span>
         </span>
         <span class="stat-sep">·</span>
         <span class="stat">
           <span class="stat-label">Interest / principal</span>
-          <span class="stat-value">{mortgageBalance > 0 ? ((totalInterest / mortgageBalance) * 100).toFixed(1) : 0}%</span>
+          <span class="stat-value">{totalBalance > 0 ? ((totalInterest / totalBalance) * 100).toFixed(1) : 0}%</span>
         </span>
       </div>
     </div>
-  {:else if mortgageBalance === 0}
-    <div class="empty-state">Enter your outstanding mortgage balance above to generate the amortisation schedule.</div>
+  {:else if totalBalance === 0}
+    <div class="empty-state">Enter your outstanding balances above to generate the amortisation schedule.</div>
   {:else if months === 0}
     <div class="empty-state warn">Set retirement age greater than current age to calculate payoff schedule.</div>
   {/if}

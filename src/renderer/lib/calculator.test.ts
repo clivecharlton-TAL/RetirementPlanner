@@ -45,6 +45,7 @@ const BASE: Inputs = {
     pensionGrowth: 0.01,
   },
   mortgageBalance: 0,
+  vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
 };
 
@@ -359,6 +360,7 @@ const SS: Inputs = {
   marginalTaxRate: 0.36,
   uncertainty: { returnRate: 0, savingsAmount: 0, savingsGrowth: 0, pensionAmount: 0, pensionGrowth: 0 },
   mortgageBalance: 0,
+  vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
 };
 
