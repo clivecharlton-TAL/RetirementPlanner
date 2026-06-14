@@ -7,10 +7,35 @@
   $: totalBefore = mortgagePayment + expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
   $: totalAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
 
+  interface GroupBlock { name: string; items: ExpenseItem[] }
+  $: grouped = (() => {
+    const blocks: GroupBlock[] = [];
+    for (const e of expenses) {
+      const g = e.group || '';
+      const last = blocks[blocks.length - 1];
+      if (last && last.name === g) last.items.push(e);
+      else blocks.push({ name: g, items: [e] });
+    }
+    return blocks;
+  })();
+
   function fmtR(v: number): string {
     if (v === 0) return '—';
     const abs = Math.abs(Math.round(v)).toLocaleString('en-ZA');
     return v < 0 ? `(R ${abs})` : `R ${abs}`;
+  }
+
+  function addRowToGroup(groupName: string) {
+    const id = `e${Date.now()}`;
+    const newItem: ExpenseItem = { id, description: '', beforeRetirement: 0, afterRetirement: 0, group: groupName };
+    const lastIdx = expenses.reduce((found, e, i) => e.group === groupName ? i : found, -1);
+    if (lastIdx === -1) {
+      expenses = [...expenses, newItem];
+    } else {
+      const arr = [...expenses];
+      arr.splice(lastIdx + 1, 0, newItem);
+      expenses = arr;
+    }
   }
 
   function addRow() {
@@ -57,43 +82,54 @@
           <td class="col-action"><span class="locked-badge" title="Calculated from Mortgage tab">auto</span></td>
         </tr>
       {/if}
-      {#each expenses as expense (expense.id)}
-        <tr class:negative={expense.beforeRetirement < 0 || expense.afterRetirement < 0}>
-          <td>
-            <input
-              class="cell-input desc"
-              type="text"
-              value={expense.description}
-              placeholder="Description"
-              on:change={(e) => updateField(expense.id, 'description', (e.target as HTMLInputElement).value)}
-            />
-          </td>
-          <td>
-            <input
-              class="cell-input amount"
-              class:is-negative={expense.beforeRetirement < 0}
-              type="text"
-              inputmode="numeric"
-              value={expense.beforeRetirement !== 0 ? Math.abs(expense.beforeRetirement).toLocaleString('en-ZA') : ''}
-              placeholder="0"
-              on:change={(e) => updateField(expense.id, 'beforeRetirement', (e.target as HTMLInputElement).value)}
-            />
-          </td>
-          <td>
-            <input
-              class="cell-input amount"
-              class:is-negative={expense.afterRetirement < 0}
-              type="text"
-              inputmode="numeric"
-              value={expense.afterRetirement !== 0 ? Math.abs(expense.afterRetirement).toLocaleString('en-ZA') : ''}
-              placeholder="0"
-              on:change={(e) => updateField(expense.id, 'afterRetirement', (e.target as HTMLInputElement).value)}
-            />
-          </td>
-          <td class="col-action">
-            <button class="remove" on:click={() => removeRow(expense.id)} title="Remove">×</button>
-          </td>
-        </tr>
+
+      {#each grouped as block}
+        {#if block.name}
+          <tr class="group-header">
+            <td colspan="3" class="group-name">{block.name}</td>
+            <td class="col-action">
+              <button class="add-to-group" on:click={() => addRowToGroup(block.name)} title="Add row to {block.name}">+</button>
+            </td>
+          </tr>
+        {/if}
+        {#each block.items as expense (expense.id)}
+          <tr class:negative={expense.beforeRetirement < 0 || expense.afterRetirement < 0}>
+            <td>
+              <input
+                class="cell-input desc"
+                type="text"
+                value={expense.description}
+                placeholder="Description"
+                on:change={(e) => updateField(expense.id, 'description', (e.target as HTMLInputElement).value)}
+              />
+            </td>
+            <td>
+              <input
+                class="cell-input amount"
+                class:is-negative={expense.beforeRetirement < 0}
+                type="text"
+                inputmode="numeric"
+                value={expense.beforeRetirement !== 0 ? Math.abs(expense.beforeRetirement).toLocaleString('en-ZA') : ''}
+                placeholder="0"
+                on:change={(e) => updateField(expense.id, 'beforeRetirement', (e.target as HTMLInputElement).value)}
+              />
+            </td>
+            <td>
+              <input
+                class="cell-input amount"
+                class:is-negative={expense.afterRetirement < 0}
+                type="text"
+                inputmode="numeric"
+                value={expense.afterRetirement !== 0 ? Math.abs(expense.afterRetirement).toLocaleString('en-ZA') : ''}
+                placeholder="0"
+                on:change={(e) => updateField(expense.id, 'afterRetirement', (e.target as HTMLInputElement).value)}
+              />
+            </td>
+            <td class="col-action">
+              <button class="remove" on:click={() => removeRow(expense.id)} title="Remove">×</button>
+            </td>
+          </tr>
+        {/each}
       {/each}
     </tbody>
     <tfoot>
@@ -144,7 +180,7 @@
   thead {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
   }
 
   th {
@@ -164,7 +200,49 @@
   th.col-amount { text-align: right; width: 180px; }
   th.col-action { width: 32px; }
 
-  tbody tr:hover { background: var(--accent-light); }
+  /* ── Group headers ──────────────────── */
+  .group-header {
+    position: sticky;
+    top: 36px;
+    z-index: 1;
+    background: var(--paper);
+  }
+
+  .group-header td {
+    padding: 0.3rem 0.75rem 0.2rem;
+    border-bottom: 1px solid var(--border);
+    border-top: 2px solid var(--border);
+  }
+
+  .group-name {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .add-to-group {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gray);
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 0 0.3rem;
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+
+  .add-to-group:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ── Data rows ──────────────────────── */
+  tbody tr:not(.group-header):not(.locked-row):hover { background: var(--accent-light); }
   tbody tr.negative td { color: var(--green); }
 
   td {
@@ -206,6 +284,7 @@
 
   .remove:hover { color: var(--red); background: var(--red-light); }
 
+  /* ── Footer ─────────────────────────── */
   tfoot {
     position: sticky;
     bottom: 0;
@@ -256,6 +335,7 @@
 
   .add-row:hover { background: var(--accent-light); }
 
+  /* ── Locked mortgage row ────────────── */
   .locked-row td { background: var(--blue-light); border-bottom: 1px solid var(--border); }
 
   .locked-desc {

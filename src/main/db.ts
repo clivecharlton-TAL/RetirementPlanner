@@ -49,34 +49,50 @@ const DEFAULT_INPUTS: Inputs = {
 };
 
 const DEFAULT_EXPENSES: ExpenseItem[] = [
-  { id: 'e1',  description: 'Investec Loan Facility',                  beforeRetirement: 41500, afterRetirement: 0 },
-  { id: 'e2',  description: 'Lower Wrensch Road Rent (After Tax)',      beforeRetirement: -25000, afterRetirement: -25000 },
-  { id: 'e3',  description: 'Cath Insurance (Car + Household)',         beforeRetirement: 1700,  afterRetirement: 1700 },
-  { id: 'e4',  description: 'Tax Free Savings Account',                 beforeRetirement: 3150,  afterRetirement: 0 },
-  { id: 'e5',  description: 'Alan Gray (Private RA)',                   beforeRetirement: 30000, afterRetirement: 0 },
-  { id: 'e6',  description: 'Alan Gray (Unit Trusts)',                  beforeRetirement: 20000, afterRetirement: 0 },
-  { id: 'e7',  description: 'Pool Maintenance',                         beforeRetirement: 600,   afterRetirement: 600 },
-  { id: 'e8',  description: 'Ronald',                                   beforeRetirement: 1500,  afterRetirement: 1500 },
-  { id: 'e9',  description: 'Council Tax (Lower Wrensch)',              beforeRetirement: 5000,  afterRetirement: 5000 },
-  { id: 'e10', description: 'Council Tax (Seagull)',                    beforeRetirement: 3500,  afterRetirement: 3500 },
-  { id: 'e11', description: 'Internet (Lower Wrensch)',                 beforeRetirement: 1300,  afterRetirement: 1300 },
-  { id: 'e12', description: 'Internet (Seagull)',                       beforeRetirement: 1300,  afterRetirement: 1300 },
-  { id: 'e13', description: 'Electricity (Seagull)',                    beforeRetirement: 1500,  afterRetirement: 1500 },
-  { id: 'e14', description: 'Petrol (Cath)',                            beforeRetirement: 1500,  afterRetirement: 1500 },
-  { id: 'e15', description: 'Petrol (Clive)',                           beforeRetirement: 8000,  afterRetirement: 8000 },
-  { id: 'e16', description: 'Food',                                     beforeRetirement: 40000, afterRetirement: 40000 },
-  { id: 'e17', description: 'Entertainment',                            beforeRetirement: 6000,  afterRetirement: 6000 },
-  { id: 'e18', description: 'Clothing',                                 beforeRetirement: 10000, afterRetirement: 10000 },
-  { id: 'e19', description: 'Clive Work Lunches',                       beforeRetirement: 6300,  afterRetirement: 0 },
-  { id: 'e20', description: 'Netflix & Subscriptions',                  beforeRetirement: 4000,  afterRetirement: 4000 },
-  { id: 'e21', description: 'Gym',                                      beforeRetirement: 1400,  afterRetirement: 1400 },
-  { id: 'e22', description: 'GoSolr',                                   beforeRetirement: 1700,  afterRetirement: 1700 },
-  { id: 'e23', description: 'MiWay Insurance',                         beforeRetirement: 2400,  afterRetirement: 2400 },
-  { id: 'e24', description: 'Girls Allowance',                          beforeRetirement: 9600,  afterRetirement: 0 },
-  { id: 'e25', description: 'Medical Aid (CAMAF)',                      beforeRetirement: 15000, afterRetirement: 15000 },
-  { id: 'e26', description: 'Holidays (Amortised)',                     beforeRetirement: 3000,  afterRetirement: 3000 },
-  { id: 'e27', description: 'Ironman Race Entries (Amortised)',         beforeRetirement: 2000,  afterRetirement: 2000 },
-  { id: 'e28', description: 'Cell Phone Bills',                         beforeRetirement: 3000,  afterRetirement: 3000 },
+  // Investment & savings contributions
+  { id: 'e5',  description: 'Allan Gray Retirement Annuity — Monthly Premium',            group: 'Investment & Savings',          beforeRetirement: 30000, afterRetirement: 0 },
+  { id: 'e6',  description: 'Allan Gray Unit Trust — Monthly Contribution',                group: 'Investment & Savings',          beforeRetirement: 20000, afterRetirement: 0 },
+  { id: 'e4',  description: 'Tax-Free Savings Account — Monthly Contribution',             group: 'Investment & Savings',          beforeRetirement: 3150,  afterRetirement: 0 },
+  // Debt service
+  { id: 'e1',  description: 'Investec Credit Facility — Monthly Repayment',                group: 'Debt Service',                  beforeRetirement: 41500, afterRetirement: 0 },
+  // Property — Lower Wrensch Road (rental)
+  { id: 'e2',  description: 'Lower Wrensch Road — Net Rental Income (After Tax)',          group: 'Property — Lower Wrensch Road', beforeRetirement: -25000, afterRetirement: -25000 },
+  { id: 'e9',  description: 'Municipal Rates & Taxes — Lower Wrensch Road',                group: 'Property — Lower Wrensch Road', beforeRetirement: 5000,  afterRetirement: 5000 },
+  { id: 'e11', description: 'Broadband Internet — Lower Wrensch Road',                     group: 'Property — Lower Wrensch Road', beforeRetirement: 1300,  afterRetirement: 1300 },
+  // Property — Seagull (primary residence)
+  { id: 'e10', description: 'Municipal Rates & Taxes — Seagull',                           group: 'Property — Seagull',            beforeRetirement: 3500,  afterRetirement: 3500 },
+  { id: 'e13', description: 'Electricity Supply — Seagull',                                group: 'Property — Seagull',            beforeRetirement: 1500,  afterRetirement: 1500 },
+  { id: 'e22', description: 'Solar Power Subscription (GoSolr) — Seagull',                 group: 'Property — Seagull',            beforeRetirement: 1700,  afterRetirement: 1700 },
+  { id: 'e12', description: 'Broadband Internet — Seagull',                                group: 'Property — Seagull',            beforeRetirement: 1300,  afterRetirement: 1300 },
+  { id: 'e29', description: 'Water & Refuse Removal — Seagull',                            group: 'Property — Seagull',            beforeRetirement: 0,     afterRetirement: 0 },
+  { id: 'e30', description: 'Armed Response / Security Monitoring',                        group: 'Property — Seagull',            beforeRetirement: 0,     afterRetirement: 0 },
+  { id: 'e7',  description: 'Swimming Pool Maintenance',                                    group: 'Property — Seagull',            beforeRetirement: 600,   afterRetirement: 600 },
+  { id: 'e8',  description: 'Domestic Worker — Garden & General (Ronald)',                  group: 'Property — Seagull',            beforeRetirement: 1500,  afterRetirement: 1500 },
+  // Insurance
+  { id: 'e3',  description: 'Vehicle & Household Contents Insurance — Catherine',          group: 'Insurance',                     beforeRetirement: 1700,  afterRetirement: 1700 },
+  { id: 'e23', description: 'Vehicle Insurance — MiWay (Clive)',                           group: 'Insurance',                     beforeRetirement: 2400,  afterRetirement: 2400 },
+  { id: 'e31', description: 'Home Building & Structural Insurance — Seagull',              group: 'Insurance',                     beforeRetirement: 0,     afterRetirement: 0 },
+  { id: 'e32', description: 'Life Insurance / Income Protection',                          group: 'Insurance',                     beforeRetirement: 0,     afterRetirement: 0 },
+  // Healthcare
+  { id: 'e25', description: 'Medical Aid Contributions — CAMAF',                           group: 'Healthcare',                    beforeRetirement: 15000, afterRetirement: 15000 },
+  // Transport
+  { id: 'e15', description: 'Motor Vehicle Fuel — Clive',                                  group: 'Transport',                     beforeRetirement: 8000,  afterRetirement: 8000 },
+  { id: 'e14', description: 'Motor Vehicle Fuel — Catherine',                               group: 'Transport',                     beforeRetirement: 1500,  afterRetirement: 1500 },
+  { id: 'e33', description: 'Motor Vehicle Maintenance — Monthly Provision',               group: 'Transport',                     beforeRetirement: 0,     afterRetirement: 0 },
+  // Food & provisions
+  { id: 'e16', description: 'Groceries & Household Provisions',                            group: 'Food & Provisions',             beforeRetirement: 40000, afterRetirement: 40000 },
+  // Personal
+  { id: 'e18', description: 'Clothing & Personal Apparel',                                 group: 'Personal',                      beforeRetirement: 10000, afterRetirement: 10000 },
+  { id: 'e28', description: 'Mobile Telecommunications',                                   group: 'Personal',                      beforeRetirement: 3000,  afterRetirement: 3000 },
+  // Family obligations
+  { id: 'e24', description: "Children's Allowances",                                       group: 'Family Obligations',            beforeRetirement: 9600,  afterRetirement: 0 },
+  { id: 'e19', description: 'Work-Related Meals — Clive',                                  group: 'Family Obligations',            beforeRetirement: 6300,  afterRetirement: 0 },
+  // Entertainment & leisure
+  { id: 'e17', description: 'Entertainment & Dining',                                      group: 'Entertainment & Leisure',       beforeRetirement: 6000,  afterRetirement: 6000 },
+  { id: 'e20', description: 'Streaming Services & Digital Subscriptions',                  group: 'Entertainment & Leisure',       beforeRetirement: 4000,  afterRetirement: 4000 },
+  { id: 'e21', description: 'Health & Fitness Membership',                                 group: 'Entertainment & Leisure',       beforeRetirement: 1400,  afterRetirement: 1400 },
+  { id: 'e26', description: 'Travel & Holidays — Monthly Provision',                       group: 'Entertainment & Leisure',       beforeRetirement: 3000,  afterRetirement: 3000 },
+  { id: 'e27', description: 'Triathlon Race Entries — Monthly Provision',                  group: 'Entertainment & Leisure',       beforeRetirement: 2000,  afterRetirement: 2000 },
 ];
 
 interface ScenarioFile {

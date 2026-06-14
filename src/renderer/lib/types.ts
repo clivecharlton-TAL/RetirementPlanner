@@ -3,6 +3,7 @@ export interface ExpenseItem {
   description: string;
   beforeRetirement: number;
   afterRetirement: number;
+  group?: string;
 }
 
 export interface BonusTranche {
