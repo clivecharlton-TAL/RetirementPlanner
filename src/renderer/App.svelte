@@ -149,7 +149,7 @@
           <Chart {result} retirementAge={inputs.retirementAge} />
         </div>
         <div class="right-table">
-          <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} />
+          <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} inflationRate={inputs.inflationRate} />
         </div>
       {:else}
         <div class="right-table">

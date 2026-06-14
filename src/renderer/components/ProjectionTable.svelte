@@ -5,6 +5,7 @@
   export let rows: ProjectionRow[];
   export let retirementAge: number;
   export let monthlyExpenses: number = 0;
+  export let inflationRate: number = 0.05;
 
   function drawdownClass(row: ProjectionRow): string {
     if (row.drawdownRate === null) return '';
@@ -29,11 +30,23 @@
     return formatZAR(annual / 12);
   }
 
-  function netMonthly(row: ProjectionRow): { value: number; label: string } | null {
+  // Expenses inflate each year after retirement — both income and expenses are in nominal rands
+  function inflatedExpenses(row: ProjectionRow): number {
+    if (row.drawdownRate === null) return 0;
+    const yearsRetired = row.age - retirementAge;
+    return monthlyExpenses * Math.pow(1 + inflationRate, yearsRetired);
+  }
+
+  function netMonthly(row: ProjectionRow): { value: number; label: string; expenses: string } | null {
     if (row.drawdownRate === null) return null;
     const income = (Math.abs(row.savingsOrDrawdown) + row.netRentalIncome + row.pensionIncome) / 12;
-    const net = income - monthlyExpenses;
-    return { value: net, label: net >= 0 ? formatZAR(net) : `(${formatZAR(Math.abs(net))})` };
+    const expenses = inflatedExpenses(row);
+    const net = income - expenses;
+    return {
+      value: net,
+      label: net >= 0 ? formatZAR(net) : `(${formatZAR(Math.abs(net))})`,
+      expenses: formatZAR(expenses),
+    };
   }
 </script>
 
@@ -48,7 +61,7 @@
         <th class="num">Net Rental</th>
         <th class="num">Pension (p.m.)</th>
         <th class="num highlight">Monthly Income</th>
-        <th class="num">Net vs Expenses</th>
+        <th class="num">Net vs Expenses <span class="col-note">(inflated)</span></th>
         <th class="num">End Balance</th>
         <th class="num">Drawdown Rate</th>
       </tr>
@@ -65,7 +78,7 @@
           <td class="num mono highlight">{monthlyIncome(row)}</td>
           {#if netMonthly(row) !== null}
             {@const net = netMonthly(row)!}
-            <td class="num mono" class:surplus={net.value >= 0} class:deficit={net.value < 0}>{net.label}</td>
+            <td class="num mono" class:surplus={net.value >= 0} class:deficit={net.value < 0} title="Expenses: {net.expenses}/month">{net.label}</td>
           {:else}
             <td class="num mono">—</td>
           {/if}
@@ -115,6 +128,7 @@
   }
 
   th.num { text-align: right; }
+  .col-note { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.58rem; color: var(--gray); opacity: 0.75; }
 
   td {
     padding: 0.3rem 0.6rem;
