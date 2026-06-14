@@ -213,7 +213,7 @@
   }
 
   .combined-summary {
-    margin: 0 0.5rem 0.1rem;
+    margin: 0.5rem 0.5rem 0.1rem;
     padding: 0.5rem 0.6rem;
     background: var(--blue-light);
     border: 1px solid var(--border);
