@@ -2,8 +2,9 @@
   import type { ExpenseItem } from '../lib/types';
 
   export let expenses: ExpenseItem[];
+  export let mortgagePayment: number = 0;
 
-  $: totalBefore = expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
+  $: totalBefore = mortgagePayment + expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
   $: totalAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
 
   function fmtR(v: number): string {
@@ -48,6 +49,14 @@
       </tr>
     </thead>
     <tbody>
+      {#if mortgagePayment > 0}
+        <tr class="locked-row">
+          <td><span class="locked-desc">Mortgage &amp; Vehicle Finance</span></td>
+          <td><span class="locked-amount">{fmtR(mortgagePayment)}</span></td>
+          <td><span class="locked-amount">—</span></td>
+          <td class="col-action"><span class="locked-badge" title="Calculated from Mortgage tab">auto</span></td>
+        </tr>
+      {/if}
       {#each expenses as expense (expense.id)}
         <tr class:negative={expense.beforeRetirement < 0 || expense.afterRetirement < 0}>
           <td>
@@ -246,4 +255,37 @@
   }
 
   .add-row:hover { background: var(--accent-light); }
+
+  .locked-row td { background: var(--blue-light); border-bottom: 1px solid var(--border); }
+
+  .locked-desc {
+    display: block;
+    padding: 0.2rem 0.4rem;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--blue);
+    font-weight: 500;
+  }
+
+  .locked-amount {
+    display: block;
+    padding: 0.2rem 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--blue);
+    text-align: right;
+  }
+
+  .locked-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: 2px;
+    padding: 0 0.3rem;
+    opacity: 0.7;
+  }
 </style>

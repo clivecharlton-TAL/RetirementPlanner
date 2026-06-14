@@ -67,7 +67,21 @@
   let tab: 'plan' | 'expenses' | 'mortgage' = 'plan';
 
   $: result = calculate(inputs);
-  $: totalExpensesBefore = expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
+
+  function computeMortgagePayment(balance: number, mRate: number, n: number): number {
+    if (balance <= 0 || n <= 0) return 0;
+    if (mRate === 0) return balance / n;
+    const factor = Math.pow(1 + mRate, n);
+    return (balance * mRate * factor) / (factor - 1);
+  }
+  $: mortgageMonths = Math.max(0, Math.round((inputs.retirementAge - inputs.currentAge) * 12));
+  $: mortgageMonthlyPayment = computeMortgagePayment(
+    inputs.mortgageBalance + inputs.vehicleFinanceBalance,
+    inputs.mortgageInterestRate / 12,
+    mortgageMonths
+  );
+
+  $: totalExpensesBefore = mortgageMonthlyPayment + expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
   $: totalExpensesAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
   $: dirty = savedSnapshot !== '' && JSON.stringify({ name: scenarioName, inputs, expenses }) !== savedSnapshot;
 
@@ -170,7 +184,7 @@
         </div>
       {:else if tab === 'expenses'}
         <div class="right-table">
-          <ExpenseSheet bind:expenses />
+          <ExpenseSheet bind:expenses mortgagePayment={mortgageMonthlyPayment} />
         </div>
       {:else}
         <div class="right-table">
