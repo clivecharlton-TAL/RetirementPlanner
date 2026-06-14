@@ -1,16 +1,28 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerZIP } from '@electron-forge/maker-zip';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     name: 'RetirementPlanner',
+    executableName: 'RetirementPlanner',
+    icon: path.resolve('./build/icon'),
+    appBundleId: 'com.charlton.retirementplanner',
+    appCategoryType: 'public.app-category.finance',
+    darwinDarkModeSupport: true,
   },
   rebuildConfig: {},
   makers: [
+    new MakerDMG({
+      name: 'RetirementPlanner',
+      icon: path.join(__dirname, 'build', 'icon.icns'),
+      overwrite: true,
+    }, ['darwin']),
     new MakerZIP({}, ['darwin']),
   ],
   plugins: [
