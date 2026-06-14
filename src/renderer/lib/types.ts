@@ -97,6 +97,12 @@ declare global {
     api: {
       loadScenario: () => Promise<ScenarioRow>;
       saveScenario: (name: string, inputsJson: string, expensesJson: string) => Promise<void>;
+      aiHasKey: () => Promise<boolean>;
+      aiSaveKey: (key: string) => Promise<void>;
+      aiSend: (messages: Array<{ role: string; content: string }>, contextJson: string) => void;
+      onAiChunk: (cb: (text: string) => void) => void;
+      onAiDone: (cb: () => void) => void;
+      offAiListeners: () => void;
     };
   }
 }

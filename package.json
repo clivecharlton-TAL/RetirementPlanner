@@ -38,6 +38,7 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "apexcharts": "^5.15.0",
     "electron-squirrel-startup": "^1.0.1",

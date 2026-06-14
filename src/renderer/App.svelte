@@ -8,6 +8,7 @@
   import ProjectionTable from './components/ProjectionTable.svelte';
   import ExpenseSheet from './components/ExpenseSheet.svelte';
   import MortgageSheet from './components/MortgageSheet.svelte';
+  import AiPanel from './components/AiPanel.svelte';
 
   const DEFAULT_INPUTS: Inputs = {
     currentAge: 55,
@@ -65,6 +66,7 @@
   let dirty = false;
   let justSaved = false;
   let tab: 'plan' | 'expenses' | 'mortgage' = 'plan';
+  let aiOpen = false;
 
   $: result = calculate(inputs);
 
@@ -84,6 +86,62 @@
   $: totalExpensesBefore = mortgageMonthlyPayment + expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
   $: totalExpensesAfter  = expenses.reduce((s, e) => s + (e.afterRetirement  || 0), 0);
   $: dirty = savedSnapshot !== '' && JSON.stringify({ name: scenarioName, inputs, expenses }) !== savedSnapshot;
+
+  $: aiContext = JSON.stringify({
+    inputs: {
+      currentAge: inputs.currentAge,
+      retirementAge: inputs.retirementAge,
+      annualIncome: inputs.annualIncome,
+      inflationRate: inputs.inflationRate,
+      mySavings: {
+        ra: inputs.raBalance, raReturn: inputs.raReturnRate,
+        unitTrusts: inputs.unitTrustBalance, utReturn: inputs.unitTrustReturnRate,
+        ukPension: inputs.ukPensionBalance, ukReturn: inputs.ukPensionReturnRate,
+        tfSavings: inputs.tfSavingsBalance, tfReturn: inputs.tfSavingsReturnRate,
+        annualSavings: inputs.annualSavings, savingsGrowth: inputs.savingsGrowthRate,
+      },
+      bonusTranches: inputs.bonusTranches,
+      cathSavings: {
+        tfSavings: inputs.cathTfSavingsBalance, tfReturn: inputs.cathTfSavingsReturnRate,
+        unitTrusts: inputs.cathUnitTrustBalance, utReturn: inputs.cathUnitTrustReturnRate,
+        ra: inputs.cathRaBalance, raReturn: inputs.cathRaReturnRate,
+        mtn: inputs.cathMtnBalance, mtnReturn: inputs.cathMtnReturnRate,
+      },
+      rental: {
+        grossAnnual: inputs.grossRentalIncome,
+        escalation: inputs.rentalEscalationRate,
+        vacancyCost: inputs.vacancyCostRate,
+      },
+      retirement: {
+        years: inputs.retirementYears,
+        incomeReplacement: inputs.incomeReplacementRate,
+        otherPension: inputs.otherPensionIncome,
+        pensionGrowth: inputs.pensionGrowthRate,
+        postReturnRate: inputs.postReturnRate,
+      },
+      marginalTaxRate: inputs.marginalTaxRate,
+    },
+    projection: {
+      finalBalance: result.finalBalance,
+      successAge: result.successAge,
+      failureAge: result.failureAge,
+      raLumpSumTaxPaid: result.raLumpSumTaxPaid,
+      rowCount: result.rows.length,
+      atRetirement: result.rows.find(r => r.age === inputs.retirementAge),
+    },
+    expenses: expenses.map(e => ({
+      description: e.description,
+      beforeRetirement: e.beforeRetirement,
+      afterRetirement: e.afterRetirement,
+    })),
+    mortgage: {
+      mortgageBalance: inputs.mortgageBalance,
+      vehicleFinance: inputs.vehicleFinanceBalance,
+      interestRate: inputs.mortgageInterestRate,
+      monthlyPayment: mortgageMonthlyPayment,
+      monthsRemaining: mortgageMonths,
+    },
+  }, null, 2);
 
   function save() {
     window.api?.saveScenario(scenarioName, JSON.stringify(inputs), JSON.stringify(expenses));
@@ -153,8 +211,13 @@
       >
         {justSaved ? '✓ Saved' : 'Save'}
       </button>
+      <button class="ai-btn" class:active={aiOpen} on:click={() => aiOpen = !aiOpen}>
+        ✦ Ask AI
+      </button>
     </div>
   </header>
+
+  <AiPanel bind:open={aiOpen} contextJson={aiContext} />
 
   <div class="body">
     <InputPanel bind:inputs />
@@ -292,6 +355,25 @@
     border-color: var(--green);
     color: var(--green);
     cursor: default;
+  }
+
+  .ai-btn {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--accent);
+    background: none;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ai-btn:hover, .ai-btn.active {
+    background: var(--accent);
+    color: white;
   }
 
   .body {

@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { loadScenario, saveScenario } from './db';
+import { hasApiKey, saveApiKey, streamAiResponse } from './ai';
 
 if (started) app.quit();
 
@@ -33,6 +34,18 @@ ipcMain.handle('load-scenario', () => loadScenario());
 ipcMain.handle('save-scenario', (_event, name: string, inputsJson: string, expensesJson: string) =>
   saveScenario(name, inputsJson, expensesJson)
 );
+
+ipcMain.handle('ai-has-key', () => hasApiKey());
+ipcMain.handle('ai-save-key', (_event, key: string) => saveApiKey(key));
+ipcMain.on('ai-send', (event, messages, contextJson: string) => {
+  streamAiResponse(
+    messages,
+    contextJson,
+    (text) => event.sender.send('ai-chunk', text),
+    ()     => event.sender.send('ai-done'),
+    (msg)  => { event.sender.send('ai-chunk', msg); event.sender.send('ai-done'); }
+  );
+});
 
 app.on('ready', createWindow);
 
