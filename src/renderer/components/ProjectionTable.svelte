@@ -8,7 +8,7 @@
 
   function drawdownClass(row: ProjectionRow): string {
     if (row.drawdownRate === null) return '';
-    if (row.drawdownRate > 0.175) return 'rate-danger';
+    if (row.drawdownRate > 0.1751) return 'rate-danger';  // true breach, not float noise at cap
     if (row.drawdownRate > 0.15) return 'rate-warn';
     return 'rate-ok';
   }
