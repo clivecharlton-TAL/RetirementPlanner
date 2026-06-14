@@ -14,14 +14,27 @@ export interface Inputs {
   currentAge: number;
   annualIncome: number;
   inflationRate: number;
-  // Savings — split by vehicle
+  // My savings — split by vehicle
   raBalance: number;
   raReturnRate: number;
   unitTrustBalance: number;
   unitTrustReturnRate: number;
+  ukPensionBalance: number;
+  ukPensionReturnRate: number;
+  tfSavingsBalance: number;
+  tfSavingsReturnRate: number;
   annualSavings: number;
   savingsGrowthRate: number;
   bonusTranches: BonusTranche[];
+  // Cath's investments
+  cathTfSavingsBalance: number;
+  cathTfSavingsReturnRate: number;
+  cathUnitTrustBalance: number;
+  cathUnitTrustReturnRate: number;
+  cathRaBalance: number;
+  cathRaReturnRate: number;
+  cathMtnBalance: number;
+  cathMtnReturnRate: number;
   // Rental
   grossRentalIncome: number;
   rentalEscalationRate: number;

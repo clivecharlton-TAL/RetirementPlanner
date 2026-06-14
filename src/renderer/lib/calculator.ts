@@ -11,111 +11,118 @@ export function computeRaLumpSumTax(lumpSum: number): number {
   return 143_550 + (lumpSum - 1_155_000) * 0.36;
 }
 
-interface TrackInputs {
-  raReturnRate: number;
-  unitTrustReturnRate: number;
-  postReturnDelta: number;
-  annualSavings: number;
-  savingsGrowthRate: number;
-  pensionIncome: number;
-  pensionGrowthRate: number;
-}
-
-const ZERO_UNCERTAINTY = {
-  returnRate: 0,
-  savingsAmount: 0,
-  savingsGrowth: 0,
-  pensionAmount: 0,
-  pensionGrowth: 0,
-};
-
-function buildTrackInputs(inputs: Inputs, delta: 1 | 0 | -1): TrackInputs {
-  const u = inputs.uncertainty ?? ZERO_UNCERTAINTY;
-  const rd = delta * (u.returnRate ?? 0);
-  return {
-    raReturnRate:        inputs.raReturnRate + rd,
-    unitTrustReturnRate: inputs.unitTrustReturnRate + rd,
-    postReturnDelta:     rd,
-    annualSavings:       inputs.annualSavings * (1 + delta * (u.savingsAmount ?? 0)),
-    savingsGrowthRate:   inputs.savingsGrowthRate + delta * (u.savingsGrowth ?? 0),
-    pensionIncome:       inputs.otherPensionIncome * (1 + delta * (u.pensionAmount ?? 0)),
-    pensionGrowthRate:   inputs.pensionGrowthRate + delta * (u.pensionGrowth ?? 0),
-  };
-}
-
 interface TrackResult {
   rows: ProjectionRow[];
   raLumpSumTaxPaid: number;
 }
 
-function projectTrack(inputs: Inputs, track: TrackInputs): TrackResult {
+function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
+  const u = inputs.uncertainty ?? {};
+  const rd = delta * (u.returnRate ?? 0);
+
+  // Effective return rates — uncertainty delta applied uniformly to all funds
+  const raRate      = inputs.raReturnRate + rd;
+  const utRate      = inputs.unitTrustReturnRate + rd;
+  const ukRate      = inputs.ukPensionReturnRate + rd;
+  const tfRate      = inputs.tfSavingsReturnRate + rd;
+  const cathTfRate  = inputs.cathTfSavingsReturnRate + rd;
+  const cathUtRate  = inputs.cathUnitTrustReturnRate + rd;
+  const cathRaRate  = inputs.cathRaReturnRate + rd;
+  const cathMtnRate = inputs.cathMtnReturnRate + rd;
+  const postReturn  = inputs.postReturnRate + rd;
+
+  // Savings / pension adjustments
+  let currentSavings    = inputs.annualSavings * (1 + delta * (u.savingsAmount ?? 0));
+  const savingsGrowth   = inputs.savingsGrowthRate + delta * (u.savingsGrowth ?? 0);
+  let currentPension    = inputs.otherPensionIncome * (1 + delta * (u.pensionAmount ?? 0));
+  const pensionGrowth   = inputs.pensionGrowthRate + delta * (u.pensionGrowth ?? 0);
+
+  // Fund balances
+  let raBalance     = inputs.raBalance;
+  let utBalance     = inputs.unitTrustBalance;
+  let ukBalance     = inputs.ukPensionBalance ?? 0;
+  let tfBalance     = inputs.tfSavingsBalance ?? 0;
+  let cathTfBalance = inputs.cathTfSavingsBalance ?? 0;
+  let cathUtBalance = inputs.cathUnitTrustBalance ?? 0;
+  let cathRaBalance = inputs.cathRaBalance ?? 0;
+  let cathMtnBalance= inputs.cathMtnBalance ?? 0;
+
+  let grossRental = inputs.grossRentalIncome;
   const rows: ProjectionRow[] = [];
   const yearsWorking = inputs.retirementAge - inputs.currentAge;
-  const incomeAtRetirement =
-    inputs.annualIncome * Math.pow(1 + inputs.inflationRate, yearsWorking);
+  const incomeAtRetirement = inputs.annualIncome * Math.pow(1 + inputs.inflationRate, yearsWorking);
   const baseDesiredIncome = incomeAtRetirement * inputs.incomeReplacementRate;
 
-  let raBalance = inputs.raBalance;
-  let utBalance = inputs.unitTrustBalance;
-  let grossRental = inputs.grossRentalIncome;
-  let currentSavings = track.annualSavings;
-  let currentPension = track.pensionIncome;
-
-  // Accumulation phase — RA and unit trusts grow at separate rates
+  // Accumulation phase — all funds grow at their own rates
   for (let y = 0; y < yearsWorking; y++) {
     const age = inputs.currentAge + y;
 
-    // Bonus tranches vesting this year (years-from-now maps to loop index y)
     const trancheInjection = inputs.bonusTranches
       .filter((t) => t.yearsFromNow === y)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const raInterest = raBalance * track.raReturnRate;
-    const utInterest = utBalance * track.unitTrustReturnRate;
-    const netRental = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
-    const netTranche = trancheInjection * (1 - inputs.marginalTaxRate);
-    const savingsContrib = currentSavings + netTranche;  // rental shown separately
+    const raInt      = raBalance     * raRate;
+    const utInt      = utBalance     * utRate;
+    const ukInt      = ukBalance     * ukRate;
+    const tfInt      = tfBalance     * tfRate;
+    const cathTfInt  = cathTfBalance * cathTfRate;
+    const cathUtInt  = cathUtBalance * cathUtRate;
+    const cathRaInt  = cathRaBalance * cathRaRate;
+    const cathMtnInt = cathMtnBalance* cathMtnRate;
 
-    const endRa = raBalance + raInterest;
-    const endUt = utBalance + utInterest + savingsContrib + netRental;
+    const totalInterest = raInt + utInt + ukInt + tfInt + cathTfInt + cathUtInt + cathRaInt + cathMtnInt;
+    const netRental  = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
+    const netTranche = trancheInjection * (1 - inputs.marginalTaxRate);
+    const savingsContrib = currentSavings + netTranche;
+
+    const openingBalance = raBalance + utBalance + ukBalance + tfBalance + cathTfBalance + cathUtBalance + cathRaBalance + cathMtnBalance;
+
+    // Contributions flow into unit trusts (most flexible vehicle)
+    raBalance     += raInt;
+    utBalance     += utInt + savingsContrib + netRental;
+    ukBalance     += ukInt;
+    tfBalance     += tfInt;
+    cathTfBalance += cathTfInt;
+    cathUtBalance += cathUtInt;
+    cathRaBalance += cathRaInt;
+    cathMtnBalance+= cathMtnInt;
 
     rows.push({
       age,
-      balance: raBalance + utBalance,
-      interest: raInterest + utInterest,
+      balance: openingBalance,
+      interest: totalInterest,
       savingsOrDrawdown: savingsContrib,
       netRentalIncome: netRental,
       pensionIncome: 0,
-      endBalance: endRa + endUt,
+      endBalance: raBalance + utBalance + ukBalance + tfBalance + cathTfBalance + cathUtBalance + cathRaBalance + cathMtnBalance,
       drawdownRate: null,
       drawdownCapped: false,
       drawdownCapType: null,
     });
 
-    raBalance = endRa;
-    utBalance = endUt;
-    grossRental *= 1 + inputs.rentalEscalationRate;
-    currentSavings *= 1 + track.savingsGrowthRate;
+    grossRental    *= 1 + inputs.rentalEscalationRate;
+    currentSavings *= 1 + savingsGrowth;
   }
 
-  // RA lump sum at retirement: 1/3 taken as cash (taxed), 2/3 converts to living annuity
-  const raLumpSum = raBalance / 3;
-  const raTaxPaid = computeRaLumpSumTax(raLumpSum);
-  const netRA = raBalance - raTaxPaid;
+  // Retirement transition — RA-type funds (Clive RA + Cath RA + Cath MTN) → lump sum tax on 1/3
+  const combinedRa = raBalance + cathRaBalance + cathMtnBalance;
+  const raLumpSum  = combinedRa / 3;
+  const raTaxPaid  = computeRaLumpSumTax(raLumpSum);
+  const netCombinedRa = combinedRa - raTaxPaid;
 
-  // Drawdown phase — single merged portfolio balance
-  const postReturn = inputs.postReturnRate + track.postReturnDelta;
-  let balance = netRA + utBalance;
+  // Non-RA funds transfer directly (Tax Free Savings, Unit Trusts, UK Pension)
+  const directFunds = utBalance + ukBalance + tfBalance + cathTfBalance + cathUtBalance;
+
+  let balance = netCombinedRa + directFunds;
   let currentDesiredIncome = baseDesiredIncome;
 
+  // Drawdown phase
   for (let y = 0; y < inputs.retirementYears; y++) {
     const age = inputs.retirementAge + y;
     const netRental = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
-    const interest = balance * postReturn;
+    const interest  = balance * postReturn;
 
-    // FSCA rate = total desired income / portfolio balance (matches spreadsheet)
     const rawDrawdownRate = balance > 0 ? currentDesiredIncome / balance : FSCA_MAX;
-
     let actualDesiredIncome = currentDesiredIncome;
     let drawdownCapped = false;
     let drawdownCapType: 'min' | 'max' | null = null;
@@ -149,9 +156,9 @@ function projectTrack(inputs: Inputs, track: TrackInputs): TrackResult {
 
     if (endBalance <= 0) break;
 
-    balance = endBalance;
-    grossRental *= 1 + inputs.rentalEscalationRate;
-    currentPension *= 1 + track.pensionGrowthRate;
+    balance              = endBalance;
+    grossRental          *= 1 + inputs.rentalEscalationRate;
+    currentPension       *= 1 + pensionGrowth;
     currentDesiredIncome *= 1 + inputs.inflationRate;
   }
 
@@ -159,9 +166,9 @@ function projectTrack(inputs: Inputs, track: TrackInputs): TrackResult {
 }
 
 export function calculate(inputs: Inputs): ProjectionResult {
-  const base = projectTrack(inputs, buildTrackInputs(inputs, 0));
-  const low = projectTrack(inputs, buildTrackInputs(inputs, -1));
-  const high = projectTrack(inputs, buildTrackInputs(inputs, 1));
+  const base = projectTrack(inputs, 0);
+  const low  = projectTrack(inputs, -1);
+  const high = projectTrack(inputs, 1);
 
   const rows = base.rows;
   const lastRow = rows[rows.length - 1];
@@ -169,12 +176,12 @@ export function calculate(inputs: Inputs): ProjectionResult {
 
   const failureRow = rows.find((r) => r.drawdownRate !== null && r.endBalance <= 0);
   const failureAge = failureRow?.age ?? null;
-  const lastAge = lastRow.age;
+  const lastAge    = lastRow.age;
   const successAge = failureAge === null && finalBalance > 0 ? lastAge : null;
 
   return {
     rows,
-    rowsLow: low.rows,
+    rowsLow:  low.rows,
     rowsHigh: high.rows,
     successAge,
     failureAge,
