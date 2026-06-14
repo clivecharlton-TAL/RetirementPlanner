@@ -37,6 +37,7 @@
 </script>
 
 <div class="sheet-wrap">
+  <div class="table-scroll">
   <table>
     <thead>
       <tr>
@@ -101,6 +102,7 @@
       </tr>
     </tfoot>
   </table>
+  </div>
 
   <button class="add-row" on:click={addRow}>+ Add expense</button>
 </div>
@@ -115,15 +117,19 @@
     overflow: hidden;
   }
 
+  .table-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.78rem;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    flex-shrink: 0;
   }
 
   thead {
@@ -190,6 +196,12 @@
   }
 
   .remove:hover { color: var(--red); background: var(--red-light); }
+
+  tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+  }
 
   tfoot tr { border-top: 2px solid var(--border); }
 
