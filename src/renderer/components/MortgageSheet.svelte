@@ -163,7 +163,7 @@
           {#each rows as row}
             <tr>
               <td class="mono center dim">{row.month}</td>
-              <td class="mono">{row.ageStr}</td>
+              <td class="mono nowrap">{row.ageStr}</td>
               <td class="mono right">{fmtR(row.payment)}</td>
               <td class="mono right red">{fmtR(row.interest)}</td>
               <td class="mono right green">{fmtR(row.principal)}</td>
@@ -375,7 +375,7 @@
   }
 
   th.col-num  { width: 64px; }
-  th.col-age  { width: 72px; }
+  th.col-age  { width: 90px; white-space: nowrap; }
   th.col-amt  { text-align: right; }
 
   td {
@@ -385,10 +385,11 @@
 
   tbody tr:hover { background: var(--accent-light); }
 
-  .mono   { font-family: var(--mono); }
-  .center { text-align: center; }
-  .right  { text-align: right; }
-  .dim    { color: var(--gray); }
-  .red    { color: var(--red); }
-  .green  { color: var(--green); }
+  .mono        { font-family: var(--mono); }
+  .center      { text-align: center; }
+  .right       { text-align: right; }
+  .nowrap      { white-space: nowrap; }
+  .dim         { color: var(--gray); }
+  .red         { color: var(--red); }
+  .green       { color: var(--green); }
 </style>
