@@ -43,6 +43,8 @@ const DEFAULT_INPUTS: Inputs = {
     pensionAmount: 0.01,
     pensionGrowth: 0.01,
   },
+  mortgageBalance: 0,
+  mortgageInterestRate: 0.115,
 };
 
 const DEFAULT_EXPENSES: ExpenseItem[] = [

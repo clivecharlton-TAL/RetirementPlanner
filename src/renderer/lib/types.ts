@@ -56,6 +56,9 @@ export interface Inputs {
     pensionAmount: number;
     pensionGrowth: number;
   };
+  // Mortgage
+  mortgageBalance: number;
+  mortgageInterestRate: number;
 }
 
 export interface ProjectionRow {

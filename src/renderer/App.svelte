@@ -7,6 +7,7 @@
   import StatusBanner from './components/StatusBanner.svelte';
   import ProjectionTable from './components/ProjectionTable.svelte';
   import ExpenseSheet from './components/ExpenseSheet.svelte';
+  import MortgageSheet from './components/MortgageSheet.svelte';
 
   const DEFAULT_INPUTS: Inputs = {
     currentAge: 55,
@@ -48,6 +49,8 @@
       pensionAmount: 0.01,
       pensionGrowth: 0.01,
     },
+    mortgageBalance: 0,
+    mortgageInterestRate: 0.115,
   };
 
   let inputs: Inputs = {
@@ -60,7 +63,7 @@
   let savedSnapshot = '';
   let dirty = false;
   let justSaved = false;
-  let tab: 'plan' | 'expenses' = 'plan';
+  let tab: 'plan' | 'expenses' | 'mortgage' = 'plan';
 
   $: result = calculate(inputs);
   $: totalExpensesBefore = expenses.reduce((s, e) => s + (e.beforeRetirement || 0), 0);
@@ -143,8 +146,9 @@
 
     <main class="right">
       <nav class="tabs">
-        <button class="tab" class:active={tab === 'plan'}    on:click={() => tab = 'plan'}>Plan</button>
+        <button class="tab" class:active={tab === 'plan'}     on:click={() => tab = 'plan'}>Plan</button>
         <button class="tab" class:active={tab === 'expenses'} on:click={() => tab = 'expenses'}>Expenses</button>
+        <button class="tab" class:active={tab === 'mortgage'} on:click={() => tab = 'mortgage'}>Mortgage</button>
       </nav>
 
       {#if tab === 'plan'}
@@ -163,9 +167,18 @@
         <div class="right-table">
           <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} inflationRate={inputs.inflationRate} />
         </div>
-      {:else}
+      {:else if tab === 'expenses'}
         <div class="right-table">
           <ExpenseSheet bind:expenses />
+        </div>
+      {:else}
+        <div class="right-table">
+          <MortgageSheet
+            retirementAge={inputs.retirementAge}
+            currentAge={inputs.currentAge}
+            bind:mortgageBalance={inputs.mortgageBalance}
+            bind:mortgageInterestRate={inputs.mortgageInterestRate}
+          />
         </div>
       {/if}
     </main>
