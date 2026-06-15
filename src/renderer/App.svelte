@@ -53,6 +53,7 @@
     mortgageBalance: 0,
     vehicleFinanceBalance: 0,
     mortgageInterestRate: 0.115,
+    surplusReinvestmentRate: 0,
   };
 
   let inputs: Inputs = {
@@ -68,7 +69,7 @@
   let tab: 'plan' | 'expenses' | 'mortgage' = 'plan';
   let aiOpen = false;
 
-  $: result = calculate(inputs);
+  $: result = calculate(inputs, totalExpensesAfter);
 
   function computeMortgagePayment(balance: number, mRate: number, n: number): number {
     if (balance <= 0 || n <= 0) return 0;
@@ -243,7 +244,7 @@
           <Chart {result} retirementAge={inputs.retirementAge} />
         </div>
         <div class="right-table">
-          <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} inflationRate={inputs.inflationRate} />
+          <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} inflationRate={inputs.inflationRate} marginalTaxRate={inputs.marginalTaxRate} />
         </div>
       {:else if tab === 'expenses'}
         <div class="right-table">

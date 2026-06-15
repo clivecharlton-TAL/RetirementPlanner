@@ -18,9 +18,45 @@
   let tipLo: number | null = null;
   let tipHi: number | null = null;
 
+  // SVG overlay — plot area coords read from ApexCharts globals after each render
+  let plotArea = { x: 0, y: 0, w: 0, h: 0 };
+
   const isNum = (v: unknown): v is number => typeof v === 'number' && isFinite(v);
   const fmtZAR  = (v: unknown) => isNum(v) ? formatZARCompact(v) : '—';
   const fmtRate = (v: number | null) => v !== null && isNum(v) ? formatPct(v) : null;
+
+  function readPlotArea() {
+    if (!chart) return;
+    try {
+      const g = (chart as any).w?.globals;
+      if (g?.gridWidth) {
+        plotArea = {
+          x: g.translateX ?? 0,
+          y: g.translateY ?? 0,
+          w: g.gridWidth,
+          h: g.gridHeight ?? 0,
+        };
+      }
+    } catch {}
+  }
+
+  // Reinvestment pot SVG polyline — computed from data + plot area, independent of ApexCharts series
+  $: svgPoints = (() => {
+    if (!plotArea.w) return '';
+    const rows = result.rows.filter(r => r.cumulativeReinvestment > 0);
+    if (rows.length < 2) return '';
+    const allAges = result.rows.map(r => r.age);
+    const minAge = allAges[0];
+    const ageRange = allAges[allAges.length - 1] - minAge;
+    if (ageRange === 0) return '';
+    const maxPot = Math.max(...rows.map(r => r.cumulativeReinvestment));
+    if (maxPot === 0) return '';
+    return rows.map(r => {
+      const px = plotArea.x + ((r.age - minAge) / ageRange) * plotArea.w;
+      const py = plotArea.y + plotArea.h * (1 - r.cumulativeReinvestment / maxPot);
+      return `${px.toFixed(1)},${py.toFixed(1)}`;
+    }).join(' ');
+  })();
 
   // Map cursor clientX to the nearest row index using ApexCharts' internal plot dimensions
   function rowIndexFromClientX(clientX: number): number {
@@ -72,7 +108,13 @@
         fontFamily: 'IBM Plex Sans, -apple-system, sans-serif',
         background: 'transparent',
         zoom: { enabled: false },
+        events: {
+          mounted: () => setTimeout(readPlotArea, 80),
+          updated: () => setTimeout(readPlotArea, 80),
+        },
       },
+      // Reinvestment Pot is intentionally excluded — drawn as SVG overlay to avoid
+      // axis scale interference from ApexCharts' rangeArea internal axis slot consumption
       series: [
         {
           name: 'Balance',
@@ -163,12 +205,28 @@
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="chart-wrap"
-  bind:this={el}
-  on:mousemove={onMouseMove}
-  on:mouseleave={onMouseLeave}
-></div>
+<div class="chart-outer">
+  <div
+    class="chart-wrap"
+    bind:this={el}
+    on:mousemove={onMouseMove}
+    on:mouseleave={onMouseLeave}
+  ></div>
+
+  {#if svgPoints}
+    <svg class="reinvest-svg" aria-hidden="true">
+      <polyline
+        points={svgPoints}
+        fill="none"
+        stroke="#2d6a4f"
+        stroke-width="2"
+        stroke-dasharray="6,4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  {/if}
+</div>
 
 {#if tipVisible && tipRow}
   {@const rateStr = fmtRate(tipRow.drawdownRate)}
@@ -182,6 +240,13 @@
       <span>Range</span>
       <span class="mono">{fmtZAR(tipLo)} – {fmtZAR(tipHi)}</span>
     </div>
+    {#if tipRow.cumulativeReinvestment > 0}
+      <div class="tip-divider"></div>
+      <div class="tip-row reinvest">
+        <span>Reinvestment Pot</span>
+        <span class="mono">{fmtZAR(tipRow.cumulativeReinvestment)}</span>
+      </div>
+    {/if}
     {#if rateStr}
       <div class="tip-divider"></div>
       <div class="tip-row rate">
@@ -193,10 +258,24 @@
 {/if}
 
 <style>
+  .chart-outer {
+    position: relative;
+  }
+
   .chart-wrap {
     min-height: 260px;
     height: 300px;
     padding: 0.5rem 0.75rem 0.25rem;
+  }
+
+  .reinvest-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
   }
 
   .tip {
@@ -238,6 +317,7 @@
   }
 
   .tip-row.rate .mono { color: var(--accent); }
+  .tip-row.reinvest .mono { color: #2d6a4f; }
 
   .tip-divider {
     border-top: 1px solid var(--border);

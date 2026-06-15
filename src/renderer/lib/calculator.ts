@@ -16,7 +16,7 @@ interface TrackResult {
   raLumpSumTaxPaid: number;
 }
 
-function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
+function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: number): TrackResult {
   const u = inputs.uncertainty ?? {};
   const rd = delta * (u.returnRate ?? 0);
 
@@ -98,6 +98,8 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
       drawdownRate: null,
       drawdownCapped: false,
       drawdownCapType: null,
+      availableToInvest: 0,
+      cumulativeReinvestment: 0,
     });
 
     grossRental    *= 1 + inputs.rentalEscalationRate;
@@ -115,6 +117,8 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
 
   let balance = netCombinedRa + directFunds;
   let currentDesiredIncome = baseDesiredIncome;
+  let reinvestBalance = 0;
+  const reinvestRate = inputs.surplusReinvestmentRate ?? 0;
 
   // Drawdown phase
   for (let y = 0; y < inputs.retirementYears; y++) {
@@ -141,6 +145,14 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
     const endBalance = balance + interest - portfolioDrawdown;
     const drawdownRate = balance > 0 ? actualDesiredIncome / balance : FSCA_MAX;
 
+    // Surplus reinvestment: post-tax income minus inflated expenses, reinvested into UT side-pot
+    // netRental is already post-tax; portfolio drawdown and pension are taxable at marginal rate
+    const annualIncomePostTax = portfolioDrawdown * (1 - inputs.marginalTaxRate) + netRental + currentPension * (1 - inputs.marginalTaxRate);
+    const annualExpenses = monthlyBaseExpenses * 12 * Math.pow(1 + inputs.inflationRate, y);
+    const annualSurplus = Math.max(0, annualIncomePostTax - annualExpenses);
+    const reinvestAmount = annualSurplus * reinvestRate;
+    reinvestBalance = reinvestBalance * (1 + utRate) + reinvestAmount;
+
     rows.push({
       age,
       balance,
@@ -152,6 +164,8 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
       drawdownRate,
       drawdownCapped,
       drawdownCapType,
+      availableToInvest: annualSurplus * reinvestRate / 12,
+      cumulativeReinvestment: reinvestBalance,
     });
 
     if (endBalance <= 0) break;
@@ -165,10 +179,10 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1): TrackResult {
   return { rows, raLumpSumTaxPaid: raTaxPaid };
 }
 
-export function calculate(inputs: Inputs): ProjectionResult {
-  const base = projectTrack(inputs, 0);
-  const low  = projectTrack(inputs, -1);
-  const high = projectTrack(inputs, 1);
+export function calculate(inputs: Inputs, monthlyBaseExpenses = 0): ProjectionResult {
+  const base = projectTrack(inputs, 0, monthlyBaseExpenses);
+  const low  = projectTrack(inputs, -1, monthlyBaseExpenses);
+  const high = projectTrack(inputs, 1, monthlyBaseExpenses);
 
   const rows = base.rows;
   const lastRow = rows[rows.length - 1];

@@ -47,6 +47,7 @@ const BASE: Inputs = {
   mortgageBalance: 0,
   vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
+  surplusReinvestmentRate: 0,
 };
 
 // ─── SA lump sum tax table — unit tests ──────────────────────────────────────
@@ -362,6 +363,7 @@ const SS: Inputs = {
   mortgageBalance: 0,
   vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
+  surplusReinvestmentRate: 0,
 };
 
 // Spreadsheet columns: B=age, D=openingBalance, E=interest, F=savings, G=desiredIncome, H=pension, I=endBalance, J=drawdownRate
@@ -449,5 +451,60 @@ describe('spreadsheet parity — drawdown (ages 65–94)', () => {
 
   it('plan survives full 30-year drawdown period with positive balance', () => {
     expect(rows.find((r) => r.age === 94)!.endBalance).toBeGreaterThan(0);
+  });
+});
+
+// ─── Surplus reinvestment ─────────────────────────────────────────────────────
+
+describe('surplus reinvestment side-pot', () => {
+  it('pre-retirement rows always have availableToInvest = 0 and cumulativeReinvestment = 0', () => {
+    const result = calculate({ ...BASE, surplusReinvestmentRate: 0.5 }, 10_000);
+    const preRows = result.rows.filter((r) => r.drawdownRate === null);
+    expect(preRows.every((r) => r.availableToInvest === 0)).toBe(true);
+    expect(preRows.every((r) => r.cumulativeReinvestment === 0)).toBe(true);
+  });
+
+  it('cumulativeReinvestment = 0 for all rows when surplusReinvestmentRate = 0', () => {
+    const result = calculate({ ...BASE, surplusReinvestmentRate: 0 }, 10_000);
+    expect(result.rows.every((r) => r.cumulativeReinvestment === 0)).toBe(true);
+  });
+
+  it('cumulativeReinvestment grows monotonically post-retirement when rate > 0 and surplus exists', () => {
+    // No expenses → full income available → pot should grow each year
+    const result = calculate({ ...BASE, surplusReinvestmentRate: 1.0 }, 0);
+    const postRows = result.rows.filter((r) => r.drawdownRate !== null);
+    for (let i = 1; i < postRows.length; i++) {
+      expect(postRows[i].cumulativeReinvestment).toBeGreaterThanOrEqual(postRows[i - 1].cumulativeReinvestment);
+    }
+  });
+
+  it('higher surplusReinvestmentRate produces a larger pot at any given age', () => {
+    const low  = calculate({ ...BASE, surplusReinvestmentRate: 0.25 }, 0);
+    const high = calculate({ ...BASE, surplusReinvestmentRate: 0.75 }, 0);
+    const r70low  = low.rows.find((r) => r.age === 70)!;
+    const r70high = high.rows.find((r) => r.age === 70)!;
+    expect(r70high.cumulativeReinvestment).toBeGreaterThan(r70low.cumulativeReinvestment);
+  });
+
+  it('availableToInvest equals post-tax surplus × reinvestmentRate / 12 at retirement', () => {
+    const monthlyExpenses = 100_000;
+    const rate = 0.5;
+    const result = calculate({ ...BASE, surplusReinvestmentRate: rate }, monthlyExpenses);
+    const r65 = result.rows.find((r) => r.age === 65)!;
+    // Portfolio drawdown and pension are taxable; netRentalIncome is already post-tax
+    const portfolioNet = Math.abs(r65.savingsOrDrawdown) * (1 - BASE.marginalTaxRate);
+    const pensionNet = r65.pensionIncome * (1 - BASE.marginalTaxRate);
+    const annualIncomePostTax = portfolioNet + r65.netRentalIncome + pensionNet;
+    const annualExpenses = monthlyExpenses * 12;
+    const expectedMonthly = Math.max(0, annualIncomePostTax - annualExpenses) * rate / 12;
+    expect(r65.availableToInvest).toBeCloseTo(expectedMonthly, 0);
+  });
+
+  it('when monthly expenses exceed income, availableToInvest = 0 (no negative surplus)', () => {
+    // Very high expenses — R1M/month → annual R12M >> income
+    const result = calculate({ ...BASE, surplusReinvestmentRate: 1.0 }, 1_000_000);
+    const postRows = result.rows.filter((r) => r.drawdownRate !== null);
+    expect(postRows.every((r) => r.availableToInvest === 0)).toBe(true);
+    expect(postRows.every((r) => r.cumulativeReinvestment === 0)).toBe(true);
   });
 });

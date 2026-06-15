@@ -61,6 +61,8 @@ export interface Inputs {
   mortgageBalance: number;
   vehicleFinanceBalance: number;
   mortgageInterestRate: number;
+  // Post-retirement surplus reinvestment
+  surplusReinvestmentRate: number; // 0–1; fraction of monthly surplus reinvested into UT
 }
 
 export interface ProjectionRow {
@@ -74,6 +76,8 @@ export interface ProjectionRow {
   drawdownRate: number | null;
   drawdownCapped: boolean;
   drawdownCapType: 'min' | 'max' | null;
+  availableToInvest: number;    // monthly surplus max(0, income − expenses); 0 pre-retirement
+  cumulativeReinvestment: number; // compounding side-pot of reinvested surplus
 }
 
 export interface ProjectionResult {

@@ -6,6 +6,7 @@
   export let retirementAge: number;
   export let monthlyExpenses: number = 0;
   export let inflationRate: number = 0.05;
+  export let marginalTaxRate: number = 0.36;
 
   function drawdownClass(row: ProjectionRow): string {
     if (row.drawdownRate === null) return '';
@@ -26,7 +27,10 @@
 
   function monthlyIncome(row: ProjectionRow): string {
     if (row.drawdownRate === null) return '—';
-    const annual = Math.abs(row.savingsOrDrawdown) + row.netRentalIncome + row.pensionIncome;
+    // Portfolio drawdown and pension are taxable; netRentalIncome is already post-tax
+    const portfolioNet = Math.abs(row.savingsOrDrawdown) * (1 - marginalTaxRate);
+    const pensionNet = row.pensionIncome * (1 - marginalTaxRate);
+    const annual = portfolioNet + row.netRentalIncome + pensionNet;
     return formatZAR(annual / 12);
   }
 
@@ -39,7 +43,9 @@
 
   function netMonthly(row: ProjectionRow): { value: number; label: string; expenses: string } | null {
     if (row.drawdownRate === null) return null;
-    const income = (Math.abs(row.savingsOrDrawdown) + row.netRentalIncome + row.pensionIncome) / 12;
+    const portfolioNet = Math.abs(row.savingsOrDrawdown) * (1 - marginalTaxRate);
+    const pensionNet = row.pensionIncome * (1 - marginalTaxRate);
+    const income = (portfolioNet + row.netRentalIncome + pensionNet) / 12;
     const expenses = inflatedExpenses(row);
     const net = income - expenses;
     return {
@@ -62,6 +68,8 @@
         <th class="num">Pension (p.m.)</th>
         <th class="num highlight">Monthly Income</th>
         <th class="num">Net vs Expenses <span class="col-note">(inflated)</span></th>
+        <th class="num reinvest">Reinvested (p.m.)</th>
+        <th class="num reinvest">Reinvestment Pot</th>
         <th class="num">End Balance</th>
         <th class="num">Drawdown Rate</th>
       </tr>
@@ -82,6 +90,8 @@
           {:else}
             <td class="num mono">—</td>
           {/if}
+          <td class="num mono reinvest-cell">{row.availableToInvest > 0 ? formatZAR(row.availableToInvest) : '—'}</td>
+          <td class="num mono reinvest-pot">{row.cumulativeReinvestment > 0 ? formatZAR(row.cumulativeReinvestment) : '—'}</td>
           <td class="num mono">{formatZAR(row.endBalance)}</td>
           <td class="num mono {drawdownClass(row)}">
             {fmtDrawdown(row)}{#if row.drawdownCapped} <span class="cap-icon" title="FSCA limit applied">⚠</span>{/if}
@@ -154,6 +164,10 @@
   .rate-ok { color: var(--green); }
   .rate-warn { color: var(--amber); font-weight: 600; }
   .rate-danger { color: var(--red); font-weight: 700; }
+
+  th.reinvest { color: var(--green); opacity: 0.85; }
+  td.reinvest-cell { color: var(--green); }
+  td.reinvest-pot { color: var(--green); font-weight: 600; }
 
   .cap-icon {
     font-size: 0.65rem;

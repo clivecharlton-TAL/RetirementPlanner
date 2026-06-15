@@ -46,6 +46,7 @@ const DEFAULT_INPUTS: Inputs = {
   mortgageBalance: 0,
   vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
+  surplusReinvestmentRate: 0,
 };
 
 const DEFAULT_EXPENSES: ExpenseItem[] = [

@@ -176,6 +176,7 @@
     <InputSlider label="Retirement Years" bind:value={inputs.retirementYears} min={5} max={50} step={1} format="integer" />
     <InputSlider label="Income Replacement" bind:value={inputs.incomeReplacementRate} min={0.10} max={1.0} step={0.01} format="percent" />
     <InputSlider label="Post-ret. Return" bind:value={inputs.postReturnRate} min={0} max={0.25} step={0.001} format="percent" />
+    <InputSlider label="Surplus Reinvestment" bind:value={inputs.surplusReinvestmentRate} min={0} max={1.0} step={0.01} format="percent" />
   </InputSection>
 
   <InputSection title="Tax">
