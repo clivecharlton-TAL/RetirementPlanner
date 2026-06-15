@@ -230,7 +230,8 @@
 
 {#if tipVisible && tipRow}
   {@const rateStr = fmtRate(tipRow.drawdownRate)}
-  <div class="tip" style="left:{tipX + 14}px; top:{tipY - 10}px">
+  {@const tipLeft = tipX + 14 + 220 > window.innerWidth ? tipX - 234 : tipX + 14}
+  <div class="tip" style="left:{tipLeft}px; top:{tipY - 10}px">
     <div class="tip-head">Age {tipRow.age}</div>
     <div class="tip-row">
       <span>Balance</span>
