@@ -361,7 +361,7 @@
               <span class="strip-label">Monthly expenses</span>
               <span class="strip-item">Before retirement: <strong>R {Math.round(totalExpensesBefore).toLocaleString('en-ZA')}</strong></span>
               <span class="strip-sep">·</span>
-              <span class="strip-item">After retirement: <strong>R {Math.round(totalExpensesAfter).toLocaleString('en-ZA')}</strong></span>
+              <span class="strip-item">After retirement: <strong>R {Math.round(totalExpensesAfter).toLocaleString('en-ZA')}</strong>{#if totalExpensesBefore > 0}<span class="strip-pct">{Math.round(totalExpensesAfter / totalExpensesBefore * 100)}%</span>{/if}</span>
             </div>
           {/if}
           <Chart {result} retirementAge={inputs.retirementAge} />
@@ -590,6 +590,13 @@
   }
 
   .strip-sep { color: var(--border); }
+
+  .strip-pct {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--gray);
+    margin-left: 0.35rem;
+  }
 
   .right-top {
     flex-shrink: 0;
