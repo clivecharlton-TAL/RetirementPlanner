@@ -65,7 +65,6 @@
         <th class="num">Interest</th>
         <th class="num">Savings / Drawdown</th>
         <th class="num">Net Rental</th>
-        <th class="num">Pension (p.m.)</th>
         <th class="num highlight">Monthly Income</th>
         <th class="num">Net vs Expenses <span class="col-note">(inflated)</span></th>
         <th class="num reinvest">Reinvested (p.m.)</th>
@@ -82,7 +81,6 @@
           <td class="num mono">{formatZAR(row.interest)}</td>
           <td class="num mono" class:drawdown={row.savingsOrDrawdown < 0}>{fmtSavings(row.savingsOrDrawdown)}</td>
           <td class="num mono">{formatZAR(row.netRentalIncome)}</td>
-          <td class="num mono">{row.pensionIncome > 0 ? formatZAR(row.pensionIncome / 12) : '—'}</td>
           <td class="num mono highlight">{monthlyIncome(row)}</td>
           {#if netMonthly(row) !== null}
             {@const net = netMonthly(row)!}
