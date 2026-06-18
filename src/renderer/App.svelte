@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import * as XLSX from 'xlsx';
   import type { Inputs, ExpenseItem } from './lib/types';
   import { calculate } from './lib/calculator';
   import InputPanel from './components/InputPanel.svelte';
@@ -152,6 +153,121 @@
     setTimeout(() => { justSaved = false; }, 1500);
   }
 
+  function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+    const tax      = inputs.marginalTaxRate;
+    const retAge   = inputs.retirementAge;
+    const inflation = inputs.inflationRate;
+
+    // ── Sheet 1: Projection ──────────────────────────────────────────────────
+    const projHeaders = [
+      'Age', 'Phase', 'Opening Balance (R)', 'Interest (R)', 'Savings / (Drawdown) (R)',
+      'Net Rental Income (R)', 'Pension p.m. (R)', 'Monthly Income post-tax (R)',
+      'Monthly Expenses inflated (R)', 'Net vs Expenses (R)',
+      'Reinvested p.m. (R)', 'Reinvestment Pot (R)', 'End Balance (R)', 'Drawdown Rate',
+    ];
+
+    const projRows = result.rows.map(row => {
+      const isDrawdown = row.drawdownRate !== null;
+      let monthlyIncome: number | null = null;
+      let monthlyExp: number | null    = null;
+      let netVsExp: number | null      = null;
+
+      if (isDrawdown) {
+        const portfolioNet = Math.abs(row.savingsOrDrawdown) * (1 - tax);
+        const pensionNet   = row.pensionIncome * (1 - tax);
+        monthlyIncome = (portfolioNet + row.netRentalIncome + pensionNet) / 12;
+        monthlyExp    = totalExpensesAfter * Math.pow(1 + inflation, row.age - retAge);
+        netVsExp      = monthlyIncome - monthlyExp;
+      }
+
+      return [
+        row.age,
+        isDrawdown ? 'Drawdown' : 'Accumulation',
+        row.balance,
+        row.interest,
+        row.savingsOrDrawdown,
+        row.netRentalIncome,
+        isDrawdown ? row.pensionIncome / 12 : null,
+        monthlyIncome,
+        monthlyExp,
+        netVsExp,
+        row.availableToInvest > 0 ? row.availableToInvest : null,
+        row.cumulativeReinvestment > 0 ? row.cumulativeReinvestment : null,
+        row.endBalance,
+        isDrawdown ? row.drawdownRate : null,
+      ];
+    });
+
+    const ws1 = XLSX.utils.aoa_to_sheet([
+      [scenarioName],
+      [`Exported ${new Date().toLocaleDateString('en-ZA')} · Marginal tax rate ${(tax * 100).toFixed(0)}% · Expenses after retirement R${Math.round(totalExpensesAfter).toLocaleString('en-ZA')}/month`],
+      [],
+      projHeaders,
+      ...projRows,
+    ]);
+
+    ws1['!cols'] = [
+      { wch: 5 }, { wch: 14 }, { wch: 20 }, { wch: 16 }, { wch: 22 },
+      { wch: 20 }, { wch: 16 }, { wch: 24 }, { wch: 24 }, { wch: 18 },
+      { wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 14 },
+    ];
+
+    // Format drawdown rate column as percentage (column N = index 13, data starts row 5 = index 4)
+    const pctFmt = '0.0%';
+    for (let r = 4; r < projRows.length + 4; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 13 });
+      if (ws1[addr] && ws1[addr].v !== null) ws1[addr].z = pctFmt;
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Projection');
+
+    // ── Sheet 2: Inputs ──────────────────────────────────────────────────────
+    const inputRows: (string | number | null)[][] = [
+      ['Parameter', 'Value'],
+      [],
+      ['Current Age', inputs.currentAge],
+      ['Retirement Age', inputs.retirementAge],
+      ['Retirement Years', inputs.retirementYears],
+      ['Annual Income', inputs.annualIncome],
+      ['Inflation Rate', inputs.inflationRate],
+      [],
+      ['RA Balance', inputs.raBalance],
+      ['RA Return Rate', inputs.raReturnRate],
+      ['Unit Trust Balance', inputs.unitTrustBalance],
+      ['Unit Trust Return Rate', inputs.unitTrustReturnRate],
+      ['Annual Savings', inputs.annualSavings],
+      ['Savings Growth Rate', inputs.savingsGrowthRate],
+      [],
+      ['Gross Rental Income (annual)', inputs.grossRentalIncome],
+      ['Rental Escalation Rate', inputs.rentalEscalationRate],
+      ['Vacancy & Cost Rate', inputs.vacancyCostRate],
+      [],
+      ['Income Replacement Rate', inputs.incomeReplacementRate],
+      ['Post-retirement Return Rate', inputs.postReturnRate],
+      ['Other Pension Income (annual)', inputs.otherPensionIncome],
+      ['Pension Growth Rate', inputs.pensionGrowthRate],
+      [],
+      ['Marginal Tax Rate', inputs.marginalTaxRate],
+      ['Surplus Reinvestment Rate', inputs.surplusReinvestmentRate],
+      [],
+      ['RA Lump Sum Tax (at retirement)', result.raLumpSumTaxPaid],
+      [],
+      ['Monthly Expenses Before Retirement', totalExpensesBefore],
+      ['Monthly Expenses After Retirement', totalExpensesAfter],
+    ];
+
+    const ws2 = XLSX.utils.aoa_to_sheet(inputRows);
+    ws2['!cols'] = [{ wch: 36 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Inputs');
+
+    // ── Write & send to main for save dialog ─────────────────────────────────
+    const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' }) as string;
+    const safeName = scenarioName.replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'RetirementPlan';
+    const date = new Date().toISOString().slice(0, 10);
+    window.api?.exportXlsx(base64, `${safeName} ${date}.xlsx`);
+  }
+
   onMount(async () => {
     try {
       const row = await window.api?.loadScenario();
@@ -211,6 +327,9 @@
         disabled={!dirty}
       >
         {justSaved ? '✓ Saved' : 'Save'}
+      </button>
+      <button class="export-btn" on:click={exportToExcel} title="Export projection to Excel">
+        Export
       </button>
       <button class="ai-btn" class:active={aiOpen} on:click={() => aiOpen = !aiOpen}>
         ✦ Ask AI
@@ -356,6 +475,25 @@
     border-color: var(--green);
     color: var(--green);
     cursor: default;
+  }
+
+  .export-btn {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--green);
+    background: none;
+    color: var(--green);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .export-btn:hover {
+    background: var(--green);
+    color: white;
   }
 
   .ai-btn {

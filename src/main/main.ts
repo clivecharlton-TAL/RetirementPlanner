@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
 import { loadScenario, saveScenario } from './db';
 import { hasApiKey, saveApiKey, streamAiResponse } from './ai';
@@ -34,6 +35,16 @@ ipcMain.handle('load-scenario', () => loadScenario());
 ipcMain.handle('save-scenario', (_event, name: string, inputsJson: string, expensesJson: string) =>
   saveScenario(name, inputsJson, expensesJson)
 );
+
+ipcMain.handle('export-xlsx', async (_event, base64: string, defaultName: string) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    defaultPath: defaultName,
+    filters: [{ name: 'Excel Workbook', extensions: ['xlsx'] }],
+  });
+  if (canceled || !filePath) return false;
+  fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
+  return true;
+});
 
 ipcMain.handle('ai-has-key', () => hasApiKey());
 ipcMain.handle('ai-save-key', (_event, key: string) => saveApiKey(key));

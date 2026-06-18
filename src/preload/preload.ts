@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('api', {
   loadScenario: () => ipcRenderer.invoke('load-scenario'),
   saveScenario: (name: string, inputsJson: string, expensesJson: string) =>
     ipcRenderer.invoke('save-scenario', name, inputsJson, expensesJson),
+  exportXlsx: (base64: string, defaultName: string) =>
+    ipcRenderer.invoke('export-xlsx', base64, defaultName),
 
   aiHasKey: () => ipcRenderer.invoke('ai-has-key'),
   aiSaveKey: (key: string) => ipcRenderer.invoke('ai-save-key', key),

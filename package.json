@@ -45,6 +45,7 @@
     "dompurify": "^3.4.10",
     "electron-squirrel-startup": "^1.0.1",
     "marked": "^18.0.5",
-    "svelte": "^5.56.3"
+    "svelte": "^5.56.3",
+    "xlsx": "^0.18.5"
   }
 }

@@ -85,8 +85,12 @@
 
       {#each grouped as block}
         {#if block.name}
+          {@const subBefore = block.items.reduce((s, e) => s + (e.beforeRetirement || 0), 0)}
+          {@const subAfter  = block.items.reduce((s, e) => s + (e.afterRetirement  || 0), 0)}
           <tr class="group-header">
-            <td colspan="3" class="group-name">{block.name}</td>
+            <td class="group-name">{block.name}</td>
+            <td class="group-subtotal">{fmtR(subBefore)}</td>
+            <td class="group-subtotal">{fmtR(subAfter)}</td>
             <td class="col-action">
               <button class="add-to-group" on:click={() => addRowToGroup(block.name)} title="Add row to {block.name}">+</button>
             </td>
@@ -221,6 +225,17 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
+  }
+
+  .group-subtotal {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--gray);
+    padding: 0.3rem 0.75rem 0.2rem;
+    border-bottom: 1px solid var(--border);
+    border-top: 2px solid var(--border);
   }
 
   .add-to-group {
