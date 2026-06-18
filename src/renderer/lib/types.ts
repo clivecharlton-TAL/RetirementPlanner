@@ -63,6 +63,9 @@ export interface Inputs {
   mortgageInterestRate: number;
   // Post-retirement surplus reinvestment
   surplusReinvestmentRate: number; // 0–1; fraction of monthly surplus reinvested into UT
+  // Variable annual bonus tranches (one per pre-retirement year)
+  variableBonusEnabled: boolean;
+  variableBonusRate: number; // fraction of that year's inflated salary, e.g. 0.5 = 50%
 }
 
 export interface ProjectionRow {

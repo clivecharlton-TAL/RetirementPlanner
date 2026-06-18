@@ -73,7 +73,13 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     const totalInterest = raInt + utInt + ukInt + tfInt + cathTfInt + cathUtInt + cathRaInt + cathMtnInt;
     const netRental  = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
     const netTranche = trancheInjection * (1 - inputs.marginalTaxRate);
-    const savingsContrib = currentSavings + netTranche;
+
+    const variableGross = inputs.variableBonusEnabled
+      ? inputs.annualIncome * Math.pow(1 + inputs.inflationRate, y) * inputs.variableBonusRate
+      : 0;
+    const variableNet = variableGross * (1 - inputs.marginalTaxRate);
+
+    const savingsContrib = currentSavings + netTranche + variableNet;
 
     const openingBalance = raBalance + utBalance + ukBalance + tfBalance + cathTfBalance + cathUtBalance + cathRaBalance + cathMtnBalance;
 

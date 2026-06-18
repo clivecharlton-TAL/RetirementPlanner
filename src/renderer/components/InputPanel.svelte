@@ -3,6 +3,7 @@
   import InputSlider from './InputSlider.svelte';
   import InputSection from './InputSection.svelte';
   import BonusTranches from './BonusTranches.svelte';
+  import VariableBonuses from './VariableBonuses.svelte';
 
   export let inputs: Inputs;
 
@@ -87,6 +88,18 @@
 
   <InputSection title="Guaranteed Bonus Tranches">
     <BonusTranches bind:tranches={inputs.bonusTranches} marginalTaxRate={inputs.marginalTaxRate} />
+  </InputSection>
+
+  <InputSection title="Variable Bonus Tranches">
+    <VariableBonuses
+      bind:enabled={inputs.variableBonusEnabled}
+      bind:rate={inputs.variableBonusRate}
+      currentAge={inputs.currentAge}
+      retirementAge={inputs.retirementAge}
+      annualIncome={inputs.annualIncome}
+      inflationRate={inputs.inflationRate}
+      marginalTaxRate={inputs.marginalTaxRate}
+    />
   </InputSection>
 
   <InputSection title="Cath's Investments">

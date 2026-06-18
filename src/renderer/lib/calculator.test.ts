@@ -48,6 +48,8 @@ const BASE: Inputs = {
   vehicleFinanceBalance: 0,
   mortgageInterestRate: 0.115,
   surplusReinvestmentRate: 0,
+  variableBonusEnabled: false,
+  variableBonusRate: 0.5,
 };
 
 // ─── SA lump sum tax table — unit tests ──────────────────────────────────────
