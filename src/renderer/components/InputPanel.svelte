@@ -94,6 +94,7 @@
     <VariableBonuses
       bind:enabled={inputs.variableBonusEnabled}
       bind:rate={inputs.variableBonusRate}
+      bind:exclusions={inputs.variableBonusExclusions}
       currentAge={inputs.currentAge}
       retirementAge={inputs.retirementAge}
       annualIncome={inputs.annualIncome}

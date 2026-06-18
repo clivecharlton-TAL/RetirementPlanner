@@ -74,7 +74,8 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     const netRental  = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
     const netTranche = trancheInjection * (1 - inputs.marginalTaxRate);
 
-    const variableGross = inputs.variableBonusEnabled
+    const excluded = (inputs.variableBonusExclusions ?? []).includes(y);
+    const variableGross = inputs.variableBonusEnabled && !excluded
       ? inputs.annualIncome * Math.pow(1 + inputs.inflationRate, y) * inputs.variableBonusRate
       : 0;
     const variableNet = variableGross * (1 - inputs.marginalTaxRate);
@@ -132,24 +133,28 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     const netRental = grossRental * (1 - inputs.vacancyCostRate) * (1 - inputs.marginalTaxRate);
     const interest  = balance * postReturn;
 
-    const rawDrawdownRate = balance > 0 ? currentDesiredIncome / balance : FSCA_MAX;
-    let actualDesiredIncome = currentDesiredIncome;
+    // FSCA drawdown rate = what is drawn FROM the annuity / annuity value.
+    // Pension and rental are external income — they reduce the portfolio draw but
+    // are not drawn from the living annuity, so they must not inflate the rate.
+    const uncappedDraw = Math.max(0, currentDesiredIncome - netRental - currentPension);
+    const rawDrawdownRate = balance > 0 ? uncappedDraw / balance : FSCA_MAX;
+
+    let portfolioDrawdown = uncappedDraw;
     let drawdownCapped = false;
     let drawdownCapType: 'min' | 'max' | null = null;
 
     if (rawDrawdownRate < FSCA_MIN) {
-      actualDesiredIncome = balance * FSCA_MIN;
+      portfolioDrawdown = balance * FSCA_MIN;
       drawdownCapped = true;
       drawdownCapType = 'min';
     } else if (rawDrawdownRate > FSCA_MAX) {
-      actualDesiredIncome = balance * FSCA_MAX;
+      portfolioDrawdown = balance * FSCA_MAX;
       drawdownCapped = true;
       drawdownCapType = 'max';
     }
 
-    const portfolioDrawdown = Math.max(0, actualDesiredIncome - netRental - currentPension);
     const endBalance = balance + interest - portfolioDrawdown;
-    const drawdownRate = balance > 0 ? actualDesiredIncome / balance : FSCA_MAX;
+    const drawdownRate = balance > 0 ? portfolioDrawdown / balance : FSCA_MAX;
 
     // Surplus reinvestment: post-tax income minus inflated expenses, reinvested into UT side-pot
     // netRental is already post-tax; portfolio drawdown and pension are taxable at marginal rate

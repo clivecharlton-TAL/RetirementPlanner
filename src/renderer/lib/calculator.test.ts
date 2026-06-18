@@ -50,6 +50,7 @@ const BASE: Inputs = {
   surplusReinvestmentRate: 0,
   variableBonusEnabled: false,
   variableBonusRate: 0.5,
+  variableBonusExclusions: [],
 };
 
 // ─── SA lump sum tax table — unit tests ──────────────────────────────────────
@@ -401,39 +402,40 @@ describe('spreadsheet parity — accumulation (ages 55–64)', () => {
 describe('spreadsheet parity — drawdown (ages 65–94)', () => {
   const { rows } = calculate(SS);
 
-  // desiredIncome = total income target (drawdown + pension). portfolioDraw = desiredIncome - pension.
+  // desired = portfolioDrawdown + pension (= total income for uncapped; = balance×17.5% + pension when capped).
+  // FSCA rate = portfolioDrawdown / balance (pension/rental are external — they don't inflate the rate).
   it.each([
-    { age: 65, balance: 45_440_400.04, interest: 3_635_232.00, desired: 3_090_827.55, pension:  50_000.00, end: 46_034_804.49, rate: 0.06802 },
-    { age: 66, balance: 46_034_804.49, interest: 3_682_784.36, desired: 3_245_368.93, pension:  52_500.00, end: 46_524_719.91, rate: 0.07050 },
-    { age: 67, balance: 46_524_719.91, interest: 3_721_977.59, desired: 3_407_637.38, pension:  55_125.00, end: 46_894_185.13, rate: 0.07324 },
-    { age: 68, balance: 46_894_185.13, interest: 3_751_534.81, desired: 3_578_019.25, pension:  57_881.25, end: 47_125_581.94, rate: 0.07630 },
-    { age: 69, balance: 47_125_581.94, interest: 3_770_046.56, desired: 3_756_920.21, pension:  60_775.31, end: 47_199_483.60, rate: 0.07972 },
-    { age: 70, balance: 47_199_483.60, interest: 3_775_958.69, desired: 3_944_766.22, pension:  63_814.08, end: 47_094_490.14, rate: 0.08358 },
-    { age: 71, balance: 47_094_490.14, interest: 3_767_559.21, desired: 4_142_004.53, pension:  67_004.78, end: 46_787_049.60, rate: 0.08795 },
-    { age: 72, balance: 46_787_049.60, interest: 3_742_963.97, desired: 4_349_104.76, pension:  70_355.02, end: 46_251_263.84, rate: 0.09296 },
-    { age: 73, balance: 46_251_263.84, interest: 3_700_101.11, desired: 4_566_560.00, pension:  73_872.77, end: 45_458_677.72, rate: 0.09873 },
-    { age: 74, balance: 45_458_677.72, interest: 3_636_694.22, desired: 4_794_888.00, pension:  77_566.41, end: 44_378_050.35, rate: 0.10548 },
-    { age: 75, balance: 44_378_050.35, interest: 3_550_244.03, desired: 5_034_632.40, pension:  81_444.73, end: 42_975_106.72, rate: 0.11345 },
-    { age: 76, balance: 42_975_106.72, interest: 3_438_008.54, desired: 5_286_364.02, pension:  85_516.97, end: 41_212_268.21, rate: 0.12301 },
-    { age: 77, balance: 41_212_268.21, interest: 3_296_981.46, desired: 5_550_682.22, pension:  89_792.82, end: 39_048_360.26, rate: 0.13469 },
-    { age: 78, balance: 39_048_360.26, interest: 3_123_868.82, desired: 5_828_216.33, pension:  94_282.46, end: 36_438_295.21, rate: 0.14926 },
-    { age: 79, balance: 36_438_295.21, interest: 2_915_063.62, desired: 6_119_627.14, pension:  98_996.58, end: 33_332_728.27, rate: 0.16794 },
-    // FSCA 17.5% cap kicks in from age 80 onward
-    { age: 80, balance: 33_332_728.27, interest: 2_666_618.26, desired: 5_833_227.45, pension: 103_946.41, end: 30_270_065.49, rate: 0.17500 },
-    { age: 81, balance: 30_270_065.49, interest: 2_421_605.24, desired: 5_297_261.46, pension: 109_143.73, end: 27_503_553.00, rate: 0.17500 },
-    { age: 82, balance: 27_503_553.00, interest: 2_200_284.24, desired: 4_813_121.77, pension: 114_600.92, end: 25_005_316.38, rate: 0.17500 },
-    { age: 83, balance: 25_005_316.38, interest: 2_000_425.31, desired: 4_375_930.37, pension: 120_330.96, end: 22_750_142.29, rate: 0.17500 },
-    { age: 84, balance: 22_750_142.29, interest: 1_820_011.38, desired: 3_981_274.90, pension: 126_347.51, end: 20_715_226.28, rate: 0.17500 },
-    { age: 85, balance: 20_715_226.28, interest: 1_657_218.10, desired: 3_625_164.60, pension: 132_664.89, end: 18_879_944.67, rate: 0.17500 },
-    { age: 86, balance: 18_879_944.67, interest: 1_510_395.57, desired: 3_303_990.32, pension: 139_298.13, end: 17_225_648.05, rate: 0.17500 },
-    { age: 87, balance: 17_225_648.05, interest: 1_378_051.84, desired: 3_014_488.41, pension: 146_263.04, end: 15_735_474.52, rate: 0.17500 },
-    { age: 88, balance: 15_735_474.52, interest: 1_258_837.96, desired: 2_753_708.04, pension: 153_576.19, end: 14_394_180.63, rate: 0.17500 },
-    { age: 89, balance: 14_394_180.63, interest: 1_151_534.45, desired: 2_518_981.61, pension: 161_255.00, end: 13_187_988.47, rate: 0.17500 },
-    { age: 90, balance: 13_187_988.47, interest: 1_055_039.08, desired: 2_307_897.98, pension: 169_317.75, end: 12_104_447.31, rate: 0.17500 },
-    { age: 91, balance: 12_104_447.31, interest:   968_355.78, desired: 2_118_278.28, pension: 177_783.63, end: 11_132_308.45, rate: 0.17500 },
-    { age: 92, balance: 11_132_308.45, interest:   890_584.68, desired: 1_948_153.98, pension: 186_672.82, end: 10_261_411.96, rate: 0.17500 },
-    { age: 93, balance: 10_261_411.96, interest:   820_912.96, desired: 1_795_747.09, pension: 196_006.46, end:  9_482_584.29, rate: 0.17500 },
-    { age: 94, balance:  9_482_584.29, interest:   758_606.74, desired: 1_659_452.25, pension: 205_806.78, end:  8_787_545.56, rate: 0.17500 },
+    { age: 65, balance: 45_440_400.04, interest: 3_635_232.00, desired: 3_090_827.55, pension:  50_000.00, end: 46_034_804.49, rate: 0.06692 },
+    { age: 66, balance: 46_034_804.49, interest: 3_682_784.36, desired: 3_245_368.93, pension:  52_500.00, end: 46_524_719.91, rate: 0.06936 },
+    { age: 67, balance: 46_524_719.91, interest: 3_721_977.59, desired: 3_407_637.38, pension:  55_125.00, end: 46_894_185.13, rate: 0.07206 },
+    { age: 68, balance: 46_894_185.13, interest: 3_751_534.81, desired: 3_578_019.25, pension:  57_881.25, end: 47_125_581.94, rate: 0.07507 },
+    { age: 69, balance: 47_125_581.94, interest: 3_770_046.56, desired: 3_756_920.21, pension:  60_775.31, end: 47_199_483.60, rate: 0.07843 },
+    { age: 70, balance: 47_199_483.60, interest: 3_775_958.69, desired: 3_944_766.22, pension:  63_814.08, end: 47_094_490.14, rate: 0.08222 },
+    { age: 71, balance: 47_094_490.14, interest: 3_767_559.21, desired: 4_142_004.53, pension:  67_004.78, end: 46_787_049.60, rate: 0.08653 },
+    { age: 72, balance: 46_787_049.60, interest: 3_742_963.97, desired: 4_349_104.76, pension:  70_355.02, end: 46_251_263.84, rate: 0.09145 },
+    { age: 73, balance: 46_251_263.84, interest: 3_700_101.11, desired: 4_566_560.00, pension:  73_872.77, end: 45_458_677.72, rate: 0.09714 },
+    { age: 74, balance: 45_458_677.72, interest: 3_636_694.22, desired: 4_794_888.00, pension:  77_566.41, end: 44_378_050.35, rate: 0.10377 },
+    { age: 75, balance: 44_378_050.35, interest: 3_550_244.03, desired: 5_034_632.40, pension:  81_444.73, end: 42_975_106.72, rate: 0.11161 },
+    { age: 76, balance: 42_975_106.72, interest: 3_438_008.54, desired: 5_286_364.02, pension:  85_516.97, end: 41_212_268.21, rate: 0.12102 },
+    { age: 77, balance: 41_212_268.21, interest: 3_296_981.46, desired: 5_550_682.22, pension:  89_792.82, end: 39_048_360.26, rate: 0.13251 },
+    { age: 78, balance: 39_048_360.26, interest: 3_123_868.82, desired: 5_828_216.33, pension:  94_282.46, end: 36_438_295.21, rate: 0.14684 },
+    { age: 79, balance: 36_438_295.21, interest: 2_915_063.62, desired: 6_119_627.14, pension:  98_996.58, end: 33_332_728.27, rate: 0.16523 },
+    // FSCA 17.5% cap kicks in from age 80; draws balance×17.5% from annuity (pension received separately)
+    { age: 80, balance: 33_332_728.27, interest: 2_666_618.26, desired: 5_937_173.86, pension: 103_946.41, end: 30_166_119.08, rate: 0.17500 },
+    { age: 81, balance: 30_166_119.08, interest: 2_413_289.53, desired: 5_388_214.57, pension: 109_143.73, end: 27_300_337.77, rate: 0.17500 },
+    { age: 82, balance: 27_300_337.77, interest: 2_184_027.02, desired: 4_892_160.03, pension: 114_600.92, end: 24_706_805.68, rate: 0.17500 },
+    { age: 83, balance: 24_706_805.68, interest: 1_976_544.45, desired: 4_444_021.96, pension: 120_330.96, end: 22_359_659.14, rate: 0.17500 },
+    { age: 84, balance: 22_359_659.14, interest: 1_788_772.73, desired: 4_039_287.86, pension: 126_347.51, end: 20_235_491.52, rate: 0.17500 },
+    { age: 85, balance: 20_235_491.52, interest: 1_618_839.32, desired: 3_673_875.90, pension: 132_664.89, end: 18_313_119.83, rate: 0.17500 },
+    { age: 86, balance: 18_313_119.83, interest: 1_465_049.59, desired: 3_344_094.10, pension: 139_298.13, end: 16_573_373.45, rate: 0.17500 },
+    { age: 87, balance: 16_573_373.45, interest: 1_325_869.88, desired: 3_046_603.39, pension: 146_263.04, end: 14_998_902.97, rate: 0.17500 },
+    { age: 88, balance: 14_998_902.97, interest: 1_199_912.24, desired: 2_778_384.21, pension: 153_576.19, end: 13_574_007.19, rate: 0.17500 },
+    { age: 89, balance: 13_574_007.19, interest: 1_085_920.57, desired: 2_536_706.25, pension: 161_255.00, end: 12_284_476.50, rate: 0.17500 },
+    { age: 90, balance: 12_284_476.50, interest:   982_758.12, desired: 2_319_101.14, pension: 169_317.75, end: 11_117_451.24, rate: 0.17500 },
+    { age: 91, balance: 11_117_451.24, interest:   889_396.10, desired: 2_123_337.60, pension: 177_783.63, end: 10_061_293.37, rate: 0.17500 },
+    { age: 92, balance: 10_061_293.37, interest:   804_903.47, desired: 1_947_399.16, pension: 186_672.82, end:  9_105_470.50, rate: 0.17500 },
+    { age: 93, balance:  9_105_470.50, interest:   728_437.64, desired: 1_789_463.79, pension: 196_006.46, end:  8_240_450.80, rate: 0.17500 },
+    { age: 94, balance:  8_240_450.80, interest:   659_236.06, desired: 1_647_885.67, pension: 205_806.78, end:  7_457_607.97, rate: 0.17500 },
   ])('age $age: balance, interest, drawdown, pension, endBalance, rate match spreadsheet', ({ age, balance, interest, desired, pension, end, rate }) => {
     const row = rows.find((r) => r.age === age)!;
     expect(row.balance).toBeCloseTo(balance, 0);

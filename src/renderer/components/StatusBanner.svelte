@@ -7,6 +7,7 @@
   $: success = result.successAge !== null;
   $: hasCap = result.rows.some((r) => r.drawdownCapped && r.drawdownCapType === 'max');
   $: capCount = result.rows.filter((r) => r.drawdownCapped && r.drawdownCapType === 'max').length;
+  $: firstCapAge = result.rows.find((r) => r.drawdownCapped && r.drawdownCapType === 'max')?.age ?? null;
   $: raTax = result.raLumpSumTaxPaid;
 </script>
 
@@ -24,8 +25,8 @@
       {/if}
       {#if hasCap}
         <span class="cap-warn">
-          ⚠ Desired income exceeds the 17.5% FSCA drawdown limit in {capCount} year{capCount !== 1 ? 's' : ''}.
-          Drawdown has been capped.
+          ⚠ FSCA 17.5% drawdown cap applied across {capCount} retirement year{capCount !== 1 ? 's' : ''},
+          starting at age {firstCapAge}. Actual income will be capped at 17.5% of the living annuity value.
         </span>
       {/if}
     </div>

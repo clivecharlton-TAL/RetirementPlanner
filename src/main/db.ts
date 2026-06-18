@@ -49,6 +49,7 @@ const DEFAULT_INPUTS: Inputs = {
   surplusReinvestmentRate: 0,
   variableBonusEnabled: false,
   variableBonusRate: 0.5,
+  variableBonusExclusions: [],
 };
 
 const DEFAULT_EXPENSES: ExpenseItem[] = [

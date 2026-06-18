@@ -66,6 +66,7 @@ export interface Inputs {
   // Variable annual bonus tranches (one per pre-retirement year)
   variableBonusEnabled: boolean;
   variableBonusRate: number; // fraction of that year's inflated salary, e.g. 0.5 = 50%
+  variableBonusExclusions: number[]; // yearsFromNow values excluded from UT investment
 }
 
 export interface ProjectionRow {

@@ -57,6 +57,7 @@
     surplusReinvestmentRate: 0,
     variableBonusEnabled: false,
     variableBonusRate: 0.5,
+    variableBonusExclusions: [],
   };
 
   let inputs: Inputs = {
@@ -281,6 +282,7 @@
           ...loaded,
           uncertainty: { ...DEFAULT_INPUTS.uncertainty, ...(loaded.uncertainty ?? {}) },
           bonusTranches: Array.isArray(loaded.bonusTranches) ? loaded.bonusTranches : [],
+          variableBonusExclusions: Array.isArray(loaded.variableBonusExclusions) ? loaded.variableBonusExclusions : [],
         };
         expenses = Array.isArray(JSON.parse(row.expenses_json)) ? JSON.parse(row.expenses_json) : [];
       }

@@ -1,6 +1,7 @@
 <script lang="ts">
   export let enabled: boolean;
   export let rate: number;
+  export let exclusions: number[];
   export let currentAge: number;
   export let retirementAge: number;
   export let annualIncome: number;
@@ -13,12 +14,14 @@
     const gross = annualIncome * Math.pow(1 + inflationRate, y) * rate;
     const tax   = gross * marginalTaxRate;
     const net   = gross - tax;
-    return { age: currentAge + y, year: y + 1, gross, tax, net };
+    return { y, age: currentAge + y, gross, tax, net };
   });
 
-  $: totalGross = rows.reduce((s, r) => s + r.gross, 0);
-  $: totalTax   = totalGross * marginalTaxRate;
-  $: totalNet   = rows.reduce((s, r) => s + r.net,   0);
+  // Summary totals only count included (checked) rows
+  $: includedRows = rows.filter(r => !exclusions.includes(r.y));
+  $: totalGross   = includedRows.reduce((s, r) => s + r.gross, 0);
+  $: totalTax     = totalGross * marginalTaxRate;
+  $: totalNet     = includedRows.reduce((s, r) => s + r.net,   0);
 
   function fmtR(v: number): string {
     return 'R' + Math.round(v).toLocaleString('en-ZA');
@@ -31,6 +34,14 @@
 
   function onRateSlider(e: Event) {
     rate = parseFloat((e.target as HTMLInputElement).value) / 100;
+  }
+
+  function toggleYear(y: number) {
+    if (exclusions.includes(y)) {
+      exclusions = exclusions.filter(e => e !== y);
+    } else {
+      exclusions = [...exclusions, y];
+    }
   }
 </script>
 
@@ -78,7 +89,8 @@
         <table>
           <thead>
             <tr>
-              <th>Age</th>
+              <th class="col-check" title="Invest this year's bonus into Unit Trust"></th>
+              <th class="col-age">Age</th>
               <th class="num">Gross Bonus</th>
               <th class="num">Tax ({(marginalTaxRate * 100).toFixed(0)}%)</th>
               <th class="num">Net to UT</th>
@@ -86,10 +98,20 @@
           </thead>
           <tbody>
             {#each rows as row}
-              <tr>
-                <td class="mono">{row.age}</td>
+              {@const excluded = exclusions.includes(row.y)}
+              <tr class:excluded>
+                <td class="col-check">
+                  <input
+                    type="checkbox"
+                    class="row-check"
+                    checked={!excluded}
+                    on:change={() => toggleYear(row.y)}
+                    title={excluded ? 'Click to invest this bonus' : 'Click to skip this bonus'}
+                  />
+                </td>
+                <td class="col-age mono">{row.age}</td>
                 <td class="num mono">{fmtR(row.gross)}</td>
-                <td class="num mono tax">({fmtR(row.tax)})</td>
+                <td class="num mono dim">({fmtR(row.tax)})</td>
                 <td class="num mono net">{fmtR(row.net)}</td>
               </tr>
             {/each}
@@ -273,9 +295,7 @@
 
   /* ── Year-by-year table ────────────────────────────────── */
   .table-wrap {
-    max-height: 260px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 3px;
     background: var(--surface);
@@ -308,8 +328,8 @@
     overflow: hidden;
   }
 
-  th:first-child { width: 36px; }
-
+  th.col-check { width: 26px; padding: 0.3rem 0.3rem; }
+  th.col-age   { width: 36px; }
   th.num { text-align: right; }
 
   td {
@@ -319,12 +339,35 @@
     overflow: hidden;
   }
 
+  td.col-check {
+    padding: 0 0.3rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  td.col-age { font-family: var(--mono); }
   td.num  { text-align: right; }
   td.mono { font-family: var(--mono); }
-  td.tax  { color: var(--red); }
+  td.dim  { color: var(--red); }
   td.net  { color: var(--green); }
 
+  /* ── Row checkbox ──────────────────────────────────────── */
+  .row-check {
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+    accent-color: var(--green);
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* ── Excluded (unchecked) rows ─────────────────────────── */
+  tr.excluded td:not(.col-check) {
+    opacity: 0.3;
+  }
+
   tbody tr:hover td { background: var(--accent-light); }
+  tbody tr.excluded:hover td { background: var(--accent-light); }
 
   /* ── Summary box ───────────────────────────────────────── */
   .tax-summary {
