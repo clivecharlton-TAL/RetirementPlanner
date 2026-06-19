@@ -80,7 +80,13 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
       : 0;
     const variableNet = variableGross * (1 - inputs.marginalTaxRate);
 
-    const savingsContrib = currentSavings + netTranche + variableNet;
+    // Monthly contributions compound within the year — use FV of ordinary annuity.
+    // Tranches and bonuses are lump-sum events, so they stay as year-end additions.
+    const utMonthlyRate = utRate / 12;
+    const fvMonthlySavings = utMonthlyRate > 0
+      ? (currentSavings / 12) * (Math.pow(1 + utMonthlyRate, 12) - 1) / utMonthlyRate
+      : currentSavings;
+    const savingsContrib = fvMonthlySavings + netTranche + variableNet;
 
     const openingBalance = raBalance + utBalance + ukBalance + tfBalance + cathTfBalance + cathUtBalance + cathRaBalance + cathMtnBalance;
 
@@ -107,6 +113,11 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
       drawdownCapType: null,
       availableToInvest: 0,
       cumulativeReinvestment: 0,
+      fundEndBalances: {
+        ra: raBalance, ut: utBalance, ukPension: ukBalance,
+        tfSavings: tfBalance, cathTf: cathTfBalance, cathUt: cathUtBalance,
+        cathRa: cathRaBalance, cathMtn: cathMtnBalance,
+      },
     });
 
     grossRental    *= 1 + inputs.rentalEscalationRate;

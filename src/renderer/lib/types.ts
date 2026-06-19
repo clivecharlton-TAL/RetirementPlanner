@@ -69,6 +69,17 @@ export interface Inputs {
   variableBonusExclusions: number[]; // yearsFromNow values excluded from UT investment
 }
 
+export interface FundEndBalances {
+  ra: number;
+  ut: number;
+  ukPension: number;
+  tfSavings: number;
+  cathTf: number;
+  cathUt: number;
+  cathRa: number;
+  cathMtn: number;
+}
+
 export interface ProjectionRow {
   age: number;
   balance: number;
@@ -82,6 +93,7 @@ export interface ProjectionRow {
   drawdownCapType: 'min' | 'max' | null;
   availableToInvest: number;    // monthly surplus max(0, income − expenses); 0 pre-retirement
   cumulativeReinvestment: number; // compounding side-pot of reinvested surplus
+  fundEndBalances?: FundEndBalances; // per-fund end balances; only populated during accumulation
 }
 
 export interface ProjectionResult {

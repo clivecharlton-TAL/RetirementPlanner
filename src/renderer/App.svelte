@@ -9,6 +9,7 @@
   import ProjectionTable from './components/ProjectionTable.svelte';
   import ExpenseSheet from './components/ExpenseSheet.svelte';
   import MortgageSheet from './components/MortgageSheet.svelte';
+  import FundPerformanceTab from './components/FundPerformanceTab.svelte';
   import AiPanel from './components/AiPanel.svelte';
 
   const DEFAULT_INPUTS: Inputs = {
@@ -70,7 +71,7 @@
   let savedSnapshot = '';
   let dirty = false;
   let justSaved = false;
-  let tab: 'plan' | 'expenses' | 'mortgage' = 'plan';
+  let tab: 'plan' | 'expenses' | 'mortgage' | 'funds' = 'plan';
   let aiOpen = false;
 
   $: result = calculate(inputs, totalExpensesAfter);
@@ -351,6 +352,7 @@
         <button class="tab" class:active={tab === 'plan'}     on:click={() => tab = 'plan'}>Plan</button>
         <button class="tab" class:active={tab === 'expenses'} on:click={() => tab = 'expenses'}>Expenses</button>
         <button class="tab" class:active={tab === 'mortgage'} on:click={() => tab = 'mortgage'}>Mortgage</button>
+        <button class="tab" class:active={tab === 'funds'}    on:click={() => tab = 'funds'}>Funds</button>
       </nav>
 
       {#if tab === 'plan'}
@@ -373,7 +375,7 @@
         <div class="right-table">
           <ExpenseSheet bind:expenses mortgagePayment={mortgageMonthlyPayment} />
         </div>
-      {:else}
+      {:else if tab === 'mortgage'}
         <div class="right-table">
           <MortgageSheet
             retirementAge={inputs.retirementAge}
@@ -382,6 +384,10 @@
             bind:vehicleFinanceBalance={inputs.vehicleFinanceBalance}
             bind:mortgageInterestRate={inputs.mortgageInterestRate}
           />
+        </div>
+      {:else}
+        <div class="right-table">
+          <FundPerformanceTab {inputs} rows={result.rows} />
         </div>
       {/if}
     </main>
