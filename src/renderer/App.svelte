@@ -27,6 +27,8 @@
     annualSavings: 360_000,
     savingsGrowthRate: 0.05,
     bonusTranches: [],
+    cathCurrentAge: 55,
+    cathRetirementAge: 57,
     cathTfSavingsBalance: 0,
     cathTfSavingsReturnRate: 0.10,
     cathUnitTrustBalance: 0,
@@ -366,7 +368,7 @@
               <span class="strip-item">After retirement: <strong>R {Math.round(totalExpensesAfter).toLocaleString('en-ZA')}</strong>{#if totalExpensesBefore > 0}<span class="strip-pct">{Math.round(totalExpensesAfter / totalExpensesBefore * 100)}%</span>{/if}</span>
             </div>
           {/if}
-          <Chart {result} retirementAge={inputs.retirementAge} />
+          <Chart {result} retirementAge={inputs.retirementAge} cathCrystallisedAtCliveAge={result.cathCrystallisedAtCliveAge} />
         </div>
         <div class="right-table">
           <ProjectionTable rows={result.rows} retirementAge={inputs.retirementAge} monthlyExpenses={totalExpensesAfter} inflationRate={inputs.inflationRate} marginalTaxRate={inputs.marginalTaxRate} />

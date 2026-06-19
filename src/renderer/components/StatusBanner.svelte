@@ -8,7 +8,8 @@
   $: hasCap = result.rows.some((r) => r.drawdownCapped && r.drawdownCapType === 'max');
   $: capCount = result.rows.filter((r) => r.drawdownCapped && r.drawdownCapType === 'max').length;
   $: firstCapAge = result.rows.find((r) => r.drawdownCapped && r.drawdownCapType === 'max')?.age ?? null;
-  $: raTax = result.raLumpSumTaxPaid;
+  $: raTax     = result.raLumpSumTaxPaid;
+  $: cathRaTax = result.cathRaLumpSumTaxPaid;
 </script>
 
 <div class="banner" class:success class:failure={!success}>
@@ -17,9 +18,15 @@
     <div class="text">
       <strong>Congratulations</strong> — at age {result.successAge}, you will still have
       <strong>{formatZAR(result.finalBalance)}</strong> remaining.
+      {#if cathRaTax > 0}
+        <span class="ra-tax">
+          Cath's RA lump sum tax (age {result.cathCrystallisedAtCliveAge}): <strong>{formatZAR(cathRaTax)}</strong>
+          (1/3 of RA + MTN converted to cash).
+        </span>
+      {/if}
       {#if raTax > 0}
         <span class="ra-tax">
-          RA lump sum tax at retirement: <strong>{formatZAR(raTax)}</strong>
+          Clive's RA lump sum tax at retirement: <strong>{formatZAR(raTax)}</strong>
           (applied to 1/3 of RA balance converted to cash).
         </span>
       {/if}
@@ -35,9 +42,14 @@
     <div class="text">
       <strong>Your plan runs out at age {result.failureAge}.</strong>
       Consider adjusting your inputs — increase savings, reduce income replacement, or delay retirement.
+      {#if cathRaTax > 0}
+        <span class="ra-tax">
+          Cath's RA lump sum tax (age {result.cathCrystallisedAtCliveAge}): {formatZAR(cathRaTax)}.
+        </span>
+      {/if}
       {#if raTax > 0}
         <span class="ra-tax">
-          Note: RA lump sum tax of {formatZAR(raTax)} was applied at retirement.
+          Note: Clive's RA lump sum tax of {formatZAR(raTax)} was applied at retirement.
         </span>
       {/if}
     </div>

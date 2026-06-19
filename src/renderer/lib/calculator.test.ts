@@ -19,6 +19,8 @@ const BASE: Inputs = {
   annualSavings: 360_000,
   savingsGrowthRate: 0.05,
   bonusTranches: [],
+  cathCurrentAge: 55,
+  cathRetirementAge: 65,  // same as Clive → crystallises at retirement, preserves existing fixtures
   cathTfSavingsBalance: 0,
   cathTfSavingsReturnRate: 0.10,
   cathUnitTrustBalance: 0,
@@ -345,6 +347,8 @@ const SS: Inputs = {
   annualSavings: 360_000,
   savingsGrowthRate: 0.05,
   bonusTranches: [],
+  cathCurrentAge: 55,
+  cathRetirementAge: 65,  // same as Clive → crystallises at retirement, preserves existing fixtures
   cathTfSavingsBalance: 0,
   cathTfSavingsReturnRate: 0.10,
   cathUnitTrustBalance: 0,
@@ -510,5 +514,53 @@ describe('surplus reinvestment side-pot', () => {
     const postRows = result.rows.filter((r) => r.drawdownRate !== null);
     expect(postRows.every((r) => r.availableToInvest === 0)).toBe(true);
     expect(postRows.every((r) => r.cumulativeReinvestment === 0)).toBe(true);
+  });
+});
+
+// ─── Cath early crystallisation ──────────────────────────────────────────────
+
+describe("Cath's early RA crystallisation", () => {
+  const WITH_CATH_RA: Inputs = {
+    ...BASE,
+    cathRaBalance: 3_000_000,
+    cathMtnBalance: 1_000_000,
+    cathCurrentAge: 55,
+    cathRetirementAge: 57,  // drawdownAge = max(57, 60) = 60; Clive also 60
+  };
+
+  it('crystallises at Clive age 60 when cathRetirementAge=57 and cathCurrentAge=55', () => {
+    const result = calculate(WITH_CATH_RA);
+    expect(result.cathCrystallisedAtCliveAge).toBe(60);
+  });
+
+  it('cathRaLumpSumTaxPaid is positive when Cath has RA-type funds', () => {
+    const result = calculate(WITH_CATH_RA);
+    expect(result.cathRaLumpSumTaxPaid).toBeGreaterThan(0);
+  });
+
+  it('cathRaLumpSumTaxPaid is zero when Cath has no RA-type funds', () => {
+    const result = calculate({ ...BASE, cathRetirementAge: 57 });
+    expect(result.cathRaLumpSumTaxPaid).toBe(0);
+  });
+
+  it('post-crystallisation fund rows show cathRa=0 and cathMtn=0', () => {
+    const result = calculate(WITH_CATH_RA);
+    const accumRows = result.rows.filter((r) => r.fundEndBalances !== undefined);
+    const postCryst = accumRows.filter((r) => r.age >= 60);
+    expect(postCryst.length).toBeGreaterThan(0);
+    expect(postCryst.every((r) => r.fundEndBalances!.cathRa === 0)).toBe(true);
+    expect(postCryst.every((r) => r.fundEndBalances!.cathMtn === 0)).toBe(true);
+  });
+
+  it('cathCrystallisedAtCliveAge is null when cathRetirementAge >= retirementAge', () => {
+    const result = calculate({ ...BASE, cathCurrentAge: 55, cathRetirementAge: 65, cathRaBalance: 1_000_000 });
+    expect(result.cathCrystallisedAtCliveAge).toBeNull();
+  });
+
+  it('higher cathRetirementAge delays crystallisation (still capped at min 60)', () => {
+    const early = calculate({ ...WITH_CATH_RA, cathRetirementAge: 57 });
+    const late  = calculate({ ...WITH_CATH_RA, cathRetirementAge: 63 });
+    expect(early.cathCrystallisedAtCliveAge).toBe(60);  // max(57,60)=60
+    expect(late.cathCrystallisedAtCliveAge).toBe(63);   // max(63,60)=63
   });
 });

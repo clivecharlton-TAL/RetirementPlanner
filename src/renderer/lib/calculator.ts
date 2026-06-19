@@ -14,6 +14,8 @@ export function computeRaLumpSumTax(lumpSum: number): number {
 interface TrackResult {
   rows: ProjectionRow[];
   raLumpSumTaxPaid: number;
+  cathRaLumpSumTaxPaid: number;
+  cathCrystallisedAtCliveAge: number | null;
 }
 
 function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: number): TrackResult {
@@ -50,6 +52,15 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
   let grossRental = inputs.grossRentalIncome;
   const rows: ProjectionRow[] = [];
   const yearsWorking = inputs.retirementAge - inputs.currentAge;
+
+  // SA law: Cath's RA-type funds (cathRa + cathMtn) can't be drawn before 60.
+  // Crystallise them at max(cathRetirementAge, 60) if that falls before Clive retires.
+  const cathCurrentAge    = inputs.cathCurrentAge ?? inputs.currentAge;
+  const cathRetirementAge = inputs.cathRetirementAge ?? inputs.retirementAge;
+  const cathDrawdownAge   = Math.max(cathRetirementAge, 60);
+  let cathCrystallised    = false;
+  let cathRaLumpSumTaxPaidLocal   = 0;
+  let cathCrystallisedAtCliveAge: number | null = null;
   const incomeAtRetirement = inputs.annualIncome * Math.pow(1 + inputs.inflationRate, yearsWorking);
   const baseDesiredIncome = incomeAtRetirement * inputs.incomeReplacementRate;
 
@@ -60,6 +71,18 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     const trancheInjection = inputs.bonusTranches
       .filter((t) => t.yearsFromNow === y)
       .reduce((sum, t) => sum + t.amount, 0);
+
+    // Crystallise Cath's RA-type funds when she reaches her drawdown eligibility age
+    if (!cathCrystallised && cathCurrentAge + y >= cathDrawdownAge) {
+      const cathLump = (cathRaBalance + cathMtnBalance) / 3;
+      const cathTax  = computeRaLumpSumTax(cathLump);
+      cathRaLumpSumTaxPaidLocal   = cathTax;
+      cathCrystallisedAtCliveAge  = age;
+      cathUtBalance += cathRaBalance + cathMtnBalance - cathTax;
+      cathRaBalance  = 0;
+      cathMtnBalance = 0;
+      cathCrystallised = true;
+    }
 
     const raInt      = raBalance     * raRate;
     const utInt      = utBalance     * utRate;
@@ -124,10 +147,11 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     currentSavings *= 1 + savingsGrowth;
   }
 
-  // Retirement transition — RA-type funds (Clive RA + Cath RA + Cath MTN) → lump sum tax on 1/3
-  const combinedRa = raBalance + cathRaBalance + cathMtnBalance;
-  const raLumpSum  = combinedRa / 3;
-  const raTaxPaid  = computeRaLumpSumTax(raLumpSum);
+  // Retirement transition — RA-type funds → lump sum tax on 1/3.
+  // If Cath already crystallised mid-accumulation her balances are 0; otherwise combine with Clive's.
+  const combinedRa    = raBalance + cathRaBalance + cathMtnBalance;
+  const raLumpSum     = combinedRa / 3;
+  const raTaxPaid     = computeRaLumpSumTax(raLumpSum);
   const netCombinedRa = combinedRa - raTaxPaid;
 
   // Non-RA funds transfer directly (Tax Free Savings, Unit Trusts, UK Pension)
@@ -198,7 +222,7 @@ function projectTrack(inputs: Inputs, delta: 1 | 0 | -1, monthlyBaseExpenses: nu
     currentDesiredIncome *= 1 + inputs.inflationRate;
   }
 
-  return { rows, raLumpSumTaxPaid: raTaxPaid };
+  return { rows, raLumpSumTaxPaid: raTaxPaid, cathRaLumpSumTaxPaid: cathRaLumpSumTaxPaidLocal, cathCrystallisedAtCliveAge };
 }
 
 export function calculate(inputs: Inputs, monthlyBaseExpenses = 0): ProjectionResult {
@@ -222,6 +246,8 @@ export function calculate(inputs: Inputs, monthlyBaseExpenses = 0): ProjectionRe
     successAge,
     failureAge,
     finalBalance,
-    raLumpSumTaxPaid: base.raLumpSumTaxPaid,
+    raLumpSumTaxPaid:          base.raLumpSumTaxPaid,
+    cathRaLumpSumTaxPaid:      base.cathRaLumpSumTaxPaid,
+    cathCrystallisedAtCliveAge: base.cathCrystallisedAtCliveAge,
   };
 }

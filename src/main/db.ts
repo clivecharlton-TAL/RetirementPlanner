@@ -18,6 +18,8 @@ const DEFAULT_INPUTS: Inputs = {
   annualSavings: 360000,
   savingsGrowthRate: 0.05,
   bonusTranches: [],
+  cathCurrentAge: 55,
+  cathRetirementAge: 57,
   cathTfSavingsBalance: 0,
   cathTfSavingsReturnRate: 0.10,
   cathUnitTrustBalance: 0,

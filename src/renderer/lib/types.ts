@@ -28,6 +28,8 @@ export interface Inputs {
   savingsGrowthRate: number;
   bonusTranches: BonusTranche[];
   // Cath's investments
+  cathCurrentAge: number;      // Cath's age today
+  cathRetirementAge: number;   // Age Cath stops working (SA law: can't draw RA before 60)
   cathTfSavingsBalance: number;
   cathTfSavingsReturnRate: number;
   cathUnitTrustBalance: number;
@@ -104,6 +106,8 @@ export interface ProjectionResult {
   failureAge: number | null;
   finalBalance: number;
   raLumpSumTaxPaid: number;
+  cathRaLumpSumTaxPaid: number;  // Tax paid when Cath's RA-type funds crystallise
+  cathCrystallisedAtCliveAge: number | null; // Clive's age when Cath's RA crystallised mid-accumulation
 }
 
 export interface ScenarioRow {

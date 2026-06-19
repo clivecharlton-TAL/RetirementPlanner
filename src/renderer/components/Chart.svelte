@@ -6,6 +6,7 @@
 
   export let result: ProjectionResult;
   export let retirementAge: number;
+  export let cathCrystallisedAtCliveAge: number | null = null;
 
   let el: HTMLDivElement;
   let chart: ApexCharts | null = null;
@@ -169,11 +170,18 @@
         },
       ],
       annotations: {
-        xaxis: [{
-          x: retirementAge,
-          borderColor: '#1b4965', borderWidth: 2,
-          label: { text: 'Retirement', style: { color: '#1b4965', background: '#d6e8f0', fontFamily: 'IBM Plex Sans', fontSize: '11px' } },
-        }],
+        xaxis: [
+          {
+            x: retirementAge,
+            borderColor: '#1b4965', borderWidth: 2,
+            label: { text: 'Clive retires', style: { color: '#1b4965', background: '#d6e8f0', fontFamily: 'IBM Plex Sans', fontSize: '11px' } },
+          },
+          ...(cathCrystallisedAtCliveAge !== null ? [{
+            x: cathCrystallisedAtCliveAge,
+            borderColor: '#c45d2e', borderWidth: 1, strokeDashArray: 4,
+            label: { text: 'Cath draws RA', offsetY: 30, style: { color: '#c45d2e', background: '#fdf0eb', fontFamily: 'IBM Plex Sans', fontSize: '11px' } },
+          }] : []),
+        ],
         yaxis: [
           {
             y: 15, seriesIndex: 2, yAxisIndex: 2,

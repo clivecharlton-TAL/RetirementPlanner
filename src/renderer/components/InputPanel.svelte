@@ -104,6 +104,11 @@
   </InputSection>
 
   <InputSection title="Cath's Investments">
+    <InputSlider label="Cath's Current Age" bind:value={inputs.cathCurrentAge} min={50} max={70} step={1} format="integer" />
+    <InputSlider label="Cath's Retirement Age" bind:value={inputs.cathRetirementAge} min={50} max={75} step={1} format="integer" />
+    {#if inputs.cathRetirementAge < 60}
+      <div class="cath-draw-note">SA law: earliest RA draw age 60 — RA funds locked until then</div>
+    {/if}
     <InputSlider label="Tax Free Savings" bind:value={inputs.cathTfSavingsBalance} min={0} max={50000000} step={5000} format="currency" />
     <InputSlider label="TF Savings Return" bind:value={inputs.cathTfSavingsReturnRate} min={0} max={0.25} step={0.001} format="percent" />
     <InputSlider label="Unit Trusts" bind:value={inputs.cathUnitTrustBalance} min={0} max={200000000} step={10000} format="currency" />
@@ -286,4 +291,12 @@
   }
 
   .mono { font-family: var(--mono); }
+
+  .cath-draw-note {
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    color: var(--amber);
+    padding: 0.2rem 0.5rem 0.25rem;
+    margin: -0.1rem 0 0.15rem;
+  }
 </style>
