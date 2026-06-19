@@ -64,12 +64,14 @@
   }
 
   function onBalanceChange(e: Event) {
-    const v = parseFloat((e.target as HTMLInputElement).value);
+    const raw = (e.target as HTMLInputElement).value.replace(/[\s, ]/g, '');
+    const v = parseFloat(raw);
     if (!isNaN(v) && v >= 0) mortgageBalance = v;
   }
 
   function onVehicleChange(e: Event) {
-    const v = parseFloat((e.target as HTMLInputElement).value);
+    const raw = (e.target as HTMLInputElement).value.replace(/[\s, ]/g, '');
+    const v = parseFloat(raw);
     if (!isNaN(v) && v >= 0) vehicleFinanceBalance = v;
   }
 
@@ -87,10 +89,10 @@
         <span class="var-affix">R</span>
         <input
           class="var-input balance"
-          type="number"
-          min="0"
-          step="10000"
-          value={mortgageBalance}
+          type="text"
+          inputmode="numeric"
+          value={mortgageBalance > 0 ? mortgageBalance.toLocaleString('en-ZA') : ''}
+          placeholder="0"
           on:change={onBalanceChange}
         />
       </div>
@@ -102,10 +104,10 @@
         <span class="var-affix">R</span>
         <input
           class="var-input balance"
-          type="number"
-          min="0"
-          step="5000"
-          value={vehicleFinanceBalance}
+          type="text"
+          inputmode="numeric"
+          value={vehicleFinanceBalance > 0 ? vehicleFinanceBalance.toLocaleString('en-ZA') : ''}
+          placeholder="0"
           on:change={onVehicleChange}
         />
       </div>

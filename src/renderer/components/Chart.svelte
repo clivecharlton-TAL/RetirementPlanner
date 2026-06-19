@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import ApexCharts from 'apexcharts';
   import type { ProjectionResult, ProjectionRow } from '../lib/types';
-  import { formatZARCompact, formatPct } from '../lib/formatter';
+  import { formatZARCompact, formatZAR, formatPct } from '../lib/formatter';
 
   export let result: ProjectionResult;
   export let retirementAge: number;
@@ -22,7 +22,7 @@
   let plotArea = { x: 0, y: 0, w: 0, h: 0 };
 
   const isNum = (v: unknown): v is number => typeof v === 'number' && isFinite(v);
-  const fmtZAR  = (v: unknown) => isNum(v) ? formatZARCompact(v) : '—';
+  const fmtZAR  = (v: unknown) => isNum(v) ? formatZAR(v) : '—';
   const fmtRate = (v: number | null) => v !== null && isNum(v) ? formatPct(v) : null;
 
   function readPlotArea() {
@@ -156,7 +156,7 @@
         {
           seriesName: 'Balance',
           title: { text: 'Balance', style: { fontFamily: 'IBM Plex Sans', fontSize: '11px', color: '#6b7280' } },
-          labels: { formatter: formatZARCompact, style: { fontFamily: 'IBM Plex Mono', fontSize: '11px' } },
+          labels: { formatter: formatZAR, style: { fontFamily: 'IBM Plex Mono', fontSize: '11px' } },
         },
         { seriesName: 'Uncertainty Band', show: false },
         {

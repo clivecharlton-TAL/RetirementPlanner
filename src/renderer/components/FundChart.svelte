@@ -77,7 +77,7 @@
       },
       yaxis: {
         labels: {
-          formatter: formatZARCompact,
+          formatter: formatZAR,
           style: { fontFamily: 'IBM Plex Mono', fontSize: '10px' },
         },
       },
